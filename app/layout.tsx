@@ -21,7 +21,7 @@ export const metadata: Metadata = {
         type: 'image/svg+xml',
       },
     ],
-    apple: '/apple-icon.png',
+    apple: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/WhatsApp%20Image%202026-08-28%20at%2001.07.23-D8C5TWxVNOEeiu6W2ZKK0Lre5mPu6G.jpeg',
   },
 }
 

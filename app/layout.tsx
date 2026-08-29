@@ -9,11 +9,11 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: '/icon-light-32x32.png',
+        url: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/WhatsApp%20Image%202026-08-28%20at%2001.07.23-KxSUitIOxLLo5caKphzA7Ia47n2FEi.jpeg',
         media: '(prefers-color-scheme: light)',
       },
       {
-        url: '/icon-dark-32x32.png',
+        url: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/WhatsApp%20Image%202026-08-28%20at%2001.07.23-KxSUitIOxLLo5caKphzA7Ia47n2FEi.jpeg',
         media: '(prefers-color-scheme: dark)',
       },
       {

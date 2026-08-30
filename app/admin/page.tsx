@@ -1,5 +1,5 @@
-import TradingCubeHome from '@/components/trading-cube-home'
+import { LiveDashboard } from '@/components/live-dashboard'
 
 export default function AdminPage() {
-  return <TradingCubeHome initialView="admin" />
+  return <LiveDashboard role="admin" />
 }

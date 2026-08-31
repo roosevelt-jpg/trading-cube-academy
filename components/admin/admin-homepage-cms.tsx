@@ -7,6 +7,8 @@ import { useRealtimeQuery } from '@/lib/hooks/use-realtime-query'
 import { DEFAULT_HOMEPAGE_SECTIONS, DEFAULT_NAVIGATION, defaultMarketingBundle } from '@/lib/defaults/cms-defaults'
 import { Btn, Eyebrow, LoadingState, Panel } from '@/components/ui/academy-ui'
 import { BlobUploadField } from '@/components/admin/blob-upload-field'
+import { HeroSliderEditor } from '@/components/admin/hero-slider-editor'
+import type { HeroSliderSettings } from '@/lib/types/database'
 import type { BlobCategory } from '@/lib/storage/blob'
 import type {
   FaqItem,
@@ -60,6 +62,11 @@ export function AdminHomepageCmsView() {
   const hp = { ...(rawSettings?.homepage ?? {}), ...(homepageDraft as SiteSettings['homepage']) }
   const sections = { ...DEFAULT_HOMEPAGE_SECTIONS, ...hp.sections }
   const navigation = hp.navigation?.length ? hp.navigation : DEFAULT_NAVIGATION
+  const heroSlider = { ...(hp.heroSlider ?? {}), ...(homepageDraft.heroSlider as HeroSliderSettings | undefined) } as HeroSliderSettings
+
+  const setHeroSlider = (next: HeroSliderSettings) => {
+    setHomepageDraft((d) => ({ ...d, heroSlider: next }))
+  }
 
   const saveHomepage = async () => {
     setSaving(true)
@@ -140,7 +147,17 @@ export function AdminHomepageCmsView() {
             <Field label="Headline" value={hp.headline ?? ''} onChange={(v) => setHomepageDraft((d) => ({ ...d, headline: v }))} />
             <Field label="Description" value={hp.description ?? ''} multiline onChange={(v) => setHomepageDraft((d) => ({ ...d, description: v }))} />
             <Field label="Trust line" value={hp.trustLine ?? ''} onChange={(v) => setHomepageDraft((d) => ({ ...d, trustLine: v }))} />
-            <BlobUploadField label="Hero image" value={hp.heroImageUrl ?? ''} onChange={(v) => setHomepageDraft((d) => ({ ...d, heroImageUrl: v }))} category="marketing" />
+            <HeroSliderEditor
+              slider={heroSlider}
+              heroPreview={hp.heroPreview}
+              onChange={setHeroSlider}
+            />
+            <BlobUploadField
+              label="Fallback hero image (single image when no slides)"
+              value={hp.heroImageUrl ?? ''}
+              onChange={(v) => setHomepageDraft((d) => ({ ...d, heroImageUrl: v }))}
+              category="marketing"
+            />
             <BlobUploadField label="CTA band image" value={hp.ctaImageUrl ?? ''} onChange={(v) => setHomepageDraft((d) => ({ ...d, ctaImageUrl: v }))} category="marketing" />
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Hero preview label" value={hp.heroPreview?.label ?? ''} onChange={(v) => setHomepageDraft((d) => ({ ...d, heroPreview: { ...hp.heroPreview, label: v } }))} />

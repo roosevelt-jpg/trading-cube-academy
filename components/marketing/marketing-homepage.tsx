@@ -12,8 +12,10 @@ import { MarketingSiteHeader } from '@/components/marketing/marketing-site-heade
 import type { SiteSettings } from '@/lib/types/database'
 import { tierLabel, whatsappUrl } from '@/lib/utils/site'
 import { normalizeAssetUrl, normalizeCourseImageUrl, normalizePillarImages } from '@/lib/utils/assets'
+import { HeroSlider } from '@/components/marketing/hero-slider'
 import { FaqSection } from '@/components/marketing/faq-section'
 import { WhatsAppFloatButton } from '@/components/ui/whatsapp-float-button'
+import { resolveHeroSlides } from '@/lib/utils/hero-slider'
 
 export function MarketingHomepageView({ initialData }: { initialData: MarketingBundle }) {
   const [data, setData] = useState(initialData)
@@ -61,7 +63,7 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
   const home = settings.homepage ?? {}
   const sections = { ...DEFAULT_HOMEPAGE_SECTIONS, ...home.sections }
   const ctas = { requestAccess: 'Request Access →', memberLogin: 'Member Login', ...home.ctas }
-  const heroImage = normalizeAssetUrl(home.heroImageUrl, DEFAULT_IMAGES.hero)
+  const { slides: heroSlides, slider: heroSlider } = resolveHeroSlides(home)
   const pillarImages = Object.values(normalizePillarImages(settings.images as Record<string, unknown>))
   const waLabel = settings.support?.whatsappLabel ?? 'WhatsApp the desk'
 
@@ -80,15 +82,8 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
           </div>
           <p className="mono muted text-[11.5px] tracking-wide">{home.trustLine}</p>
         </div>
-        {heroImage && (
-          <div className="relative min-h-[240px] flex-1 overflow-hidden border border-[var(--border)] md:min-h-[340px] lg:max-w-[520px]">
-            <img src={heroImage as string} alt="Trader analyzing live market charts" className="size-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg)] via-transparent to-transparent" />
-            <Panel className="absolute bottom-4 left-4 right-4 p-3">
-              <p className="mono text-[10px] uppercase tracking-wider text-yellow">{home.heroPreview?.label ?? 'Live curriculum preview'}</p>
-              <p className="text-sm font-semibold">{home.heroPreview?.title ?? 'Price Action Mastery · Module 3'}</p>
-            </Panel>
-          </div>
+        {heroSlides.length > 0 && (
+          <HeroSlider slides={heroSlides} settings={heroSlider} />
         )}
       </section>
 

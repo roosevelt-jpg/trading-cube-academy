@@ -1,3 +1,5 @@
+import { mergeHeroSliderSettings } from '@/lib/utils/hero-slider'
+
 /**
  * Default CMS content and industry-focused images.
  * Seeded into Supabase via seed.sql; also used when rendering before DB is connected.
@@ -76,6 +78,18 @@ export const DEFAULT_SITE_SETTINGS = {
     heroTerminalImageUrl: DEFAULT_IMAGES.heroTerminal,
     ctaImageUrl: DEFAULT_IMAGES.ctaBand,
     heroPreview: { label: 'Live curriculum preview', title: 'Price Action Mastery · Module 3' },
+    heroSlider: {
+      enabled: true,
+      intervalSeconds: 6,
+      transition: 'fade',
+      transitionDurationMs: 700,
+      autoplay: true,
+      pauseOnHover: true,
+      showDots: true,
+      showArrows: true,
+      loop: true,
+      slides: [],
+    },
     ctas: { requestAccess: 'Request Access →', memberLogin: 'Member Login' },
     sections: { ...DEFAULT_HOMEPAGE_SECTIONS },
     navigation: [...DEFAULT_NAVIGATION],
@@ -307,10 +321,15 @@ export function mergeSettings(db: Record<string, unknown> | null | undefined) {
       : base.homepage.navigation),
     ctas: { ...base.homepage.ctas, ...((db.homepage as { ctas?: object })?.ctas ?? {}) },
     heroPreview: { ...base.homepage.heroPreview, ...((db.homepage as { heroPreview?: object })?.heroPreview ?? {}) },
+    heroSlider: {
+      ...base.homepage.heroSlider,
+      ...((db.homepage as { heroSlider?: object })?.heroSlider ?? {}),
+    },
   } as typeof base.homepage
   homepage.heroImageUrl = normalizeAssetUrl(homepage.heroImageUrl, DEFAULT_IMAGES.hero) ?? DEFAULT_IMAGES.hero
   homepage.heroTerminalImageUrl = normalizeAssetUrl(homepage.heroTerminalImageUrl, DEFAULT_IMAGES.heroTerminal) ?? DEFAULT_IMAGES.heroTerminal
   homepage.ctaImageUrl = normalizeAssetUrl(homepage.ctaImageUrl, DEFAULT_IMAGES.ctaBand) ?? DEFAULT_IMAGES.ctaBand
+  homepage.heroSlider = mergeHeroSliderSettings(homepage.heroSlider)
 
   const branding = { ...base.branding, ...(db.branding as object) }
   if (branding.logoBannerPathname?.includes('WhatsApp')) {

@@ -17,6 +17,29 @@ export type HomepageSectionCopy = {
 
 export type NavLink = { label: string; href: string }
 
+export type HeroSlide = {
+  id: string
+  imageUrl: string
+  alt?: string
+  previewLabel?: string
+  previewTitle?: string
+}
+
+export type HeroSliderTransition = 'fade' | 'slide' | 'zoom'
+
+export type HeroSliderSettings = {
+  enabled?: boolean
+  slides?: HeroSlide[]
+  intervalSeconds?: number
+  transition?: HeroSliderTransition
+  transitionDurationMs?: number
+  autoplay?: boolean
+  pauseOnHover?: boolean
+  showDots?: boolean
+  showArrows?: boolean
+  loop?: boolean
+}
+
 export type SiteSettings = {
   branding?: { companyName?: string; tagline?: string; logoPathname?: string; logoIconPathname?: string; logoBannerPathname?: string }
   homepage?: {
@@ -27,6 +50,7 @@ export type SiteSettings = {
     heroImageUrl?: string
     heroTerminalImageUrl?: string
     ctaImageUrl?: string
+    heroSlider?: HeroSliderSettings
     heroPreview?: { label?: string; title?: string }
     ctas?: { requestAccess?: string; memberLogin?: string }
     sections?: {

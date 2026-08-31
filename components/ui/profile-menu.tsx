@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
+import { ChevronDown } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { signOutAction } from '@/lib/auth/actions'
 import { Avatar } from '@/components/ui/academy-ui'
@@ -45,18 +46,17 @@ export function ProfileMenu({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="menu"
+        aria-label={`${label} account menu`}
       >
-        <div className="hidden text-right sm:block">
-          <p className="mono text-[10px] uppercase tracking-wider text-muted">{profile.role}</p>
-          <p className="text-sm font-semibold">{profile.email ?? label}</p>
-        </div>
         <Avatar initials={initials} size={36} />
+        <ChevronDown className={cn('h-4 w-4 text-muted transition-transform', open && 'rotate-180')} aria-hidden />
       </button>
 
       <div className={cn('profile-menu-dropdown', open && 'open')} role="menu">
         <div className="border-b border-[var(--border-soft)] px-4 py-3">
           <p className="font-semibold">{label}</p>
-          <p className="mono muted text-xs">{profile.email}</p>
+          {profile.email ? <p className="mono muted text-xs">{profile.email}</p> : null}
+          <p className="mono mt-1 text-[10px] uppercase tracking-wider text-muted">{profile.role}</p>
         </div>
         <Link href={settingsHref} className="profile-menu-item" onClick={() => setOpen(false)}>
           Profile settings

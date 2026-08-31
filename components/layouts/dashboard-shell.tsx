@@ -45,8 +45,8 @@ export function StudentShell({
             <p className="mono muted text-[11px]">WELCOME BACK</p>
             <p className="h2 text-lg">{profile.full_name}</p>
           </div>
-          <div className="flex items-center gap-4">
-            <LiveClock className="mono muted hidden text-xs md:block" />
+          <div className="flex shrink-0 items-center gap-4">
+            <LiveClock />
             <ProfileMenu profile={profile} settingsHref="/student/profile" />
           </div>
         </div>
@@ -91,8 +91,8 @@ export function AdminShell({
       <div className="min-w-0">
         <div className="topbar">
           <p className="mono muted text-xs">Admin control center</p>
-          <div className="flex items-center gap-4">
-            <LiveClock className="mono muted hidden text-xs md:block" />
+          <div className="flex shrink-0 items-center gap-4">
+            <LiveClock />
             <ProfileMenu profile={profile} settingsHref="/admin/settings" />
           </div>
         </div>

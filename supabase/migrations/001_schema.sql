@@ -373,22 +373,22 @@ create policy "admin manage enrollments" on public.enrollments for all using (pu
 create policy "admin manage certificates" on public.certificates for all using (public.is_admin()) with check (public.is_admin());
 create policy "students read activity" on public.activity_events for select using (auth.uid() is not null);
 
--- Realtime
-alter publication supabase_realtime add table public.site_settings;
-alter publication supabase_realtime add table public.page_contents;
-alter publication supabase_realtime add table public.courses;
-alter publication supabase_realtime add table public.modules;
-alter publication supabase_realtime add table public.lessons;
-alter publication supabase_realtime add table public.youtube_videos;
-alter publication supabase_realtime add table public.marketing_stats;
-alter publication supabase_realtime add table public.marketing_pillars;
-alter publication supabase_realtime add table public.marketing_steps;
-alter publication supabase_realtime add table public.testimonials;
-alter publication supabase_realtime add table public.faq_items;
-alter publication supabase_realtime add table public.profiles;
-alter publication supabase_realtime add table public.enrollments;
-alter publication supabase_realtime add table public.lesson_progress;
-alter publication supabase_realtime add table public.module_progress;
-alter publication supabase_realtime add table public.quiz_attempts;
-alter publication supabase_realtime add table public.support_tickets;
-alter publication supabase_realtime add table public.activity_events;
+-- Realtime (idempotent — safe to re-run if tables are already published)
+do $$ begin alter publication supabase_realtime add table public.site_settings; exception when duplicate_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.page_contents; exception when duplicate_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.courses; exception when duplicate_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.modules; exception when duplicate_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.lessons; exception when duplicate_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.youtube_videos; exception when duplicate_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.marketing_stats; exception when duplicate_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.marketing_pillars; exception when duplicate_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.marketing_steps; exception when duplicate_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.testimonials; exception when duplicate_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.faq_items; exception when duplicate_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.profiles; exception when duplicate_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.enrollments; exception when duplicate_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.lesson_progress; exception when duplicate_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.module_progress; exception when duplicate_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.quiz_attempts; exception when duplicate_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.support_tickets; exception when duplicate_object then null; end $$;
+do $$ begin alter publication supabase_realtime add table public.activity_events; exception when duplicate_object then null; end $$;

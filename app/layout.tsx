@@ -8,8 +8,8 @@ export const metadata: Metadata = {
   description: 'A structured trading education built for clarity, process, and progress.',
   generator: 'v0.app',
   icons: {
-    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
-    apple: '/brand/logo-banner.jpg',
+    icon: [{ url: '/brand/logo-icon.svg', type: 'image/svg+xml' }],
+    apple: '/brand/logo-icon.svg',
   },
 }
 

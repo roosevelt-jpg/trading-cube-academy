@@ -1,5 +1,16 @@
--- Run this in Supabase SQL Editor when seed.sql failed on student FK rows.
--- Requires: migrations applied, courses seeded, and a student profile (run node scripts/seed-auth-users.mjs first).
+-- Run this in Supabase SQL Editor AFTER seed-courses.sql
+-- Requires: migrations applied, courses seeded, and a student profile in public.profiles.
+-- Auth users: run `node scripts/seed-auth-users.mjs` in your project terminal (NOT the SQL Editor).
+
+do $$
+begin
+  if not exists (select 1 from public.courses where id = 'c0010000-0000-4000-8000-000000000001') then
+    raise exception 'Courses missing — run supabase/snippets/seed-courses.sql first, then re-run this script.';
+  end if;
+  if not exists (select 1 from public.profiles where role = 'student') then
+    raise exception 'No student profile — create users in Supabase Auth dashboard or run node scripts/seed-auth-users.mjs in terminal.';
+  end if;
+end $$;
 
 -- Student enrollments & progress
 insert into public.enrollments (user_id, course_id, progress_pct)

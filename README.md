@@ -54,7 +54,14 @@ node scripts/seed-auth-users.mjs
 # Then run supabase/seed.sql in the SQL Editor (or psql)
 ```
 
-If seed fails on student rows (`support_tickets_user_id_fkey`), your student profile UUID differs from the seed defaults. Re-run the tail of seed after auth setup, or paste `supabase/snippets/seed-student-data.sql` in the SQL Editor.
+**Supabase SQL Editor run order** (paste each file separately — the SQL Editor cannot run `node` commands):
+
+1. `supabase/snippets/fix-profiles-columns.sql` (if profiles table predates migrations)
+2. `supabase/snippets/seed-courses.sql` — courses, modules, lessons, quizzes
+3. `supabase/snippets/fix-auth-login.sql` — login fix if needed (or use terminal: `node scripts/seed-auth-users.mjs`)
+4. `supabase/snippets/seed-student-data.sql` — enrollments, progress, tickets
+
+If student rows fail with `enrollments_course_id_fkey`, run step 2 first. If they fail with `support_tickets_user_id_fkey`, ensure a student profile exists (step 3).
 
 Then sync CMS content and integration rows:
 

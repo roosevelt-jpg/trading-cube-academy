@@ -46,22 +46,41 @@ async function listUsers() {
 }
 
 async function upsertProfile(userId, email, profile) {
-  const full = {
-    id: userId,
-    email,
-    full_name: profile.full_name,
-    role: profile.role,
-    status: 'active',
-    avatar_initials: profile.avatar_initials,
+  const { data: existing } = await admin.from('profiles').select('id').eq('id', userId).maybeSingle()
+
+  const payloads = [
+    {
+      id: userId,
+      email,
+      full_name: profile.full_name,
+      role: profile.role,
+      status: 'active',
+      avatar_initials: profile.avatar_initials,
+    },
+    { id: userId, email, full_name: profile.full_name, role: profile.role },
+    { id: userId, full_name: profile.full_name, role: profile.role },
+  ]
+
+  if (existing) {
+    for (const row of payloads) {
+      const { id: _id, ...patch } = row
+      const { error } = await admin.from('profiles').update(patch).eq('id', userId)
+      if (!error) return
+      if (!['42703', 'PGRST204'].includes(error.code)) throw error
+    }
+    console.warn('  ⚠ Profile columns missing — run supabase/snippets/fix-profiles-columns.sql in SQL Editor')
+    return
   }
-  let { error } = await admin.from('profiles').upsert(full, { onConflict: 'id' })
-  if (error) {
-    const { error: e2 } = await admin.from('profiles').upsert(
-      { id: userId, full_name: profile.full_name, role: profile.role },
-      { onConflict: 'id' },
-    )
-    if (e2) throw e2
+
+  let lastError = null
+  for (const row of payloads) {
+    const { error } = await admin.from('profiles').insert(row)
+    if (!error) return
+    lastError = error
+    if (error.code === '23505') return
+    if (!['42703', 'PGRST204'].includes(error.code)) throw error
   }
+  throw lastError
 }
 
 async function upsertUser({ emails, password, profile }) {

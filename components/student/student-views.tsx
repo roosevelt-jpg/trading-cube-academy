@@ -252,7 +252,7 @@ export function StudentModuleView({
             <Link key={lesson.id} href={locked ? '#' : href} className={locked ? 'pointer-events-none' : ''}>
               <div
                 className={`sb-link ${!locked && !done ? 'on' : ''}`}
-                style={{ color: done ? 'var(--green)' : locked ? 'var(--muted)' : undefined }}
+                style={{ color: done ? 'var(--green)' : locked ? 'var(--text-muted-soft)' : undefined }}
               >
                 {done ? '✓' : locked ? '🔒' : '▶'} {i + 1}. {lesson.title}
               </div>

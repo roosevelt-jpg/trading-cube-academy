@@ -131,7 +131,7 @@ export function AdminHomepageCmsView() {
           <button
             key={t.id}
             type="button"
-            className={`mono rounded border px-3 py-1.5 text-xs ${tab === t.id ? 'border-yellow text-yellow' : 'border-[var(--border-soft)] text-[var(--muted)]'}`}
+            className={`mono rounded border px-3 py-1.5 text-xs ${tab === t.id ? 'border-yellow text-yellow' : 'border-[var(--border-soft)] text-muted-soft'}`}
             onClick={() => setTab(t.id)}
           >
             {t.label}

@@ -25,4 +25,4 @@ on conflict (provider) do nothing;
 -- Default 30-minute timer on Module 3 quiz (when LMS tables exist)
 update public.module_quiz_settings
 set time_limit_seconds = 1800
-where module_id = 'm0030001-0000-4000-8000-000000000003' and time_limit_seconds is null;
+where module_id = 'a0030001-0000-4000-8000-000000000003' and time_limit_seconds is null;

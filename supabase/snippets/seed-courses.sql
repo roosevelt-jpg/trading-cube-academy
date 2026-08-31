@@ -1,5 +1,11 @@
 -- Run in Supabase SQL Editor BEFORE seed-student-data.sql
--- Seeds courses, modules, lessons, quizzes, and marketing videos.
+-- Or skip SQL entirely: node scripts/seed-lms-data.mjs
+
+-- Patch legacy schema gaps (safe to re-run)
+alter table public.courses add column if not exists image_url text;
+alter table public.youtube_videos add column if not exists course_name text;
+alter table public.youtube_videos add column if not exists duration_label text;
+alter table public.module_quiz_settings add column if not exists time_limit_seconds int;
 
 insert into public.courses (id, slug, title, description, tier, status, module_count, lesson_count, enrolled_count, sort_order, published) values
 ('c0010000-0000-4000-8000-000000000001', 'market-structure-basics', 'Market Structure Basics', 'Read structure before you trade it', 'foundation', 'live', 4, 16, 280, 0, true),
@@ -73,7 +79,7 @@ insert into public.quiz_options (id, question_id, option_text, is_correct, sort_
 ('e0030001-0000-4000-8000-000000000010', 'd0030001-0000-4000-8000-000000000005', 'A single exact tick', false, 1)
 on conflict (id) do nothing;
 
-insert into public.youtube_videos (id, title, description, video_id, course_name, duration_label, visibility, published, sort_order) values
+insert into public.youtube_videos (id, title, description, video_id, duration_label, course_name, visibility, published, sort_order) values
 ('f0000001-0000-4000-8000-000000000001', 'Reading Your First Candlestick', 'Foundation preview', 'dQw4w9WgXcQ', 'Market Structure Basics', '6:42', 'marketing', true, 0),
 ('f0000001-0000-4000-8000-000000000002', 'Position Sizing in 90 Seconds', 'Risk preview', 'dQw4w9WgXcQ', 'Risk Management', '5:18', 'marketing', true, 1),
 ('f0000001-0000-4000-8000-000000000003', 'Support & Resistance Zones', 'Price action preview', 'dQw4w9WgXcQ', 'Price Action Mastery', '9:04', 'marketing', true, 2),

@@ -73,8 +73,9 @@ async function main() {
   const branding = {
     companyName: 'The Trading Cube Academy',
     tagline: 'Created by traders, for traders.',
-    logoPathname:
-      'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/WhatsApp%20Image%202026-08-28%20at%2001.07.23-KxSUitIOxLLo5caKphzA7Ia47n2FEi.jpeg',
+    logoIconPathname: '/brand/logo-icon.svg',
+    logoBannerPathname: '/brand/logo-banner.jpg',
+    logoPathname: '/brand/logo-icon.svg',
   }
   const footer = {
     description: 'Created by traders, for traders. A structured academy for people serious about the markets.',

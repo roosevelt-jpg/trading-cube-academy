@@ -2,14 +2,35 @@
 
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
-import { companyName, logoSrc } from '@/lib/utils/site'
+import { companyName, logoBannerSrc, logoIconSrc } from '@/lib/utils/site'
 import type { SiteSettings } from '@/lib/types/database'
 
-export function Logo({ settings, className }: { settings?: SiteSettings; className?: string }) {
+type LogoProps = {
+  settings?: SiteSettings
+  className?: string
+  variant?: 'icon' | 'banner'
+  href?: string | false
+}
+
+export function Logo({ settings, className, variant = 'icon', href = '/' }: LogoProps) {
+  const src = variant === 'banner' ? logoBannerSrc(settings) : logoIconSrc(settings)
+  const alt = companyName(settings)
+  const img = (
+    <img
+      src={src}
+      alt={alt}
+      className={cn(
+        'object-contain',
+        variant === 'banner' ? 'logo-banner h-10 w-auto max-w-[min(220px,100%)]' : 'logo-icon size-9 shrink-0',
+      )}
+    />
+  )
+  if (href === false) {
+    return <span className={cn('logo inline-flex items-center', className)}>{img}</span>
+  }
   return (
-    <Link href="/" className={cn('logo flex items-center gap-2.5', className)}>
-      <img src={logoSrc(settings)} alt={`${companyName(settings)} logo`} className="mark h-6 w-auto object-contain" />
-      <span className="font-display text-[15px] font-bold tracking-wide">{companyName(settings)}</span>
+    <Link href={href} className={cn('logo inline-flex items-center', className)} aria-label={alt}>
+      {img}
     </Link>
   )
 }

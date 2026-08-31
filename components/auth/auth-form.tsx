@@ -70,7 +70,7 @@ export function AuthForm({ mode, settings }: { mode: 'login' | 'signup' | 'forgo
         </>
       )}
       <Panel className="auth-card relative z-10">
-        <div className="mb-8 flex justify-center"><Logo settings={settings ?? undefined} /></div>
+        <div className="mb-8 flex justify-center"><Logo settings={settings ?? undefined} variant="banner" /></div>
         <Eyebrow className="mb-3">{mode === 'login' ? 'Members only' : mode === 'signup' ? 'Start your path' : 'Account recovery'}</Eyebrow>
         <h1 className="h1 text-3xl">{titles[mode]}</h1>
         <p className="muted mt-2 text-sm">{subs[mode]}</p>

@@ -630,8 +630,9 @@ export function AdminSettingsView() {
       <Panel className="mt-8 space-y-4 p-6">
         <Eyebrow>Branding</Eyebrow>
         <div className="input-group"><label>Academy name</label><input className="input" defaultValue={branding.companyName} onChange={(e) => setDraft({ ...draft, branding: { ...branding, companyName: e.target.value } })} /></div>
-        <div className="input-group"><label>Logo image URL</label><input className="input" defaultValue={branding.logoPathname} onChange={(e) => setDraft({ ...draft, branding: { ...branding, logoPathname: e.target.value } })} /></div>
-        {branding.logoPathname && <img src={branding.logoPathname} alt="Logo preview" className="h-16 w-auto object-contain" />}
+        <div className="input-group"><label>Logo icon URL</label><input className="input" defaultValue={branding.logoIconPathname ?? branding.logoPathname} onChange={(e) => setDraft({ ...draft, branding: { ...branding, logoIconPathname: e.target.value, logoPathname: e.target.value } })} placeholder="/brand/logo-icon.svg" /></div>
+        <div className="input-group"><label>Logo banner URL (optional wordmark)</label><input className="input" defaultValue={branding.logoBannerPathname} onChange={(e) => setDraft({ ...draft, branding: { ...branding, logoBannerPathname: e.target.value } })} placeholder="/brand/logo-banner.jpg" /></div>
+        {(branding.logoIconPathname ?? branding.logoPathname) && <img src={branding.logoIconPathname ?? branding.logoPathname} alt="Logo icon preview" className="size-12 object-contain" />}
       </Panel>
 
       <Panel className="mt-6 space-y-4 p-6">

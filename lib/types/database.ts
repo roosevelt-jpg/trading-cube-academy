@@ -9,7 +9,7 @@ export type Profile = {
 }
 
 export type SiteSettings = {
-  branding?: { companyName?: string; tagline?: string; logoPathname?: string }
+  branding?: { companyName?: string; tagline?: string; logoPathname?: string; logoIconPathname?: string; logoBannerPathname?: string }
   homepage?: {
     eyebrow?: string
     headline?: string

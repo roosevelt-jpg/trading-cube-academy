@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none" role="img" aria-label="The Trading Cube">
+  <!-- Interconnected cube mark — matches brand yellow icon -->
+  <rect x="6" y="28" width="20" height="20" rx="5" fill="#F4B400"/>
+  <rect x="30" y="8" width="16" height="16" rx="4" fill="#F4B400"/>
+  <rect x="52" y="24" width="22" height="22" rx="5.5" fill="#F4B400"/>
+  <rect x="30" y="52" width="16" height="16" rx="4" fill="#F4B400"/>
+  <path
+    d="M26 38h4v-8h8V16h4M46 24v8h8v12M46 52h8v-8h-8"
+    stroke="#F4B400"
+    stroke-width="6"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

@@ -5,7 +5,9 @@
  */
 
 export const DEFAULT_IMAGES = {
-  logo: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/WhatsApp%20Image%202026-08-28%20at%2001.07.23-KxSUitIOxLLo5caKphzA7Ia47n2FEi.jpeg',
+  logoIcon: '/brand/logo-icon.svg',
+  logoBanner: '/brand/logo-banner.jpg',
+  logo: '/brand/logo-icon.svg',
   hero: 'https://images.unsplash.com/photo-1611974789855-9c2a00d0712a?w=1400&q=80&auto=format&fit=crop',
   heroTerminal: 'https://images.unsplash.com/photo-1642790106117-e829e014aba0?w=900&q=80&auto=format&fit=crop',
   ctaBand: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1400&q=80&auto=format&fit=crop',
@@ -30,7 +32,9 @@ export const DEFAULT_SITE_SETTINGS = {
   branding: {
     companyName: 'The Trading Cube Academy',
     tagline: 'Created by traders, for traders.',
-    logoPathname: DEFAULT_IMAGES.logo,
+    logoIconPathname: DEFAULT_IMAGES.logoIcon,
+    logoBannerPathname: DEFAULT_IMAGES.logoBanner,
+    logoPathname: DEFAULT_IMAGES.logoIcon,
   },
   homepage: {
     eyebrow: 'Private trading education · Invite only',

@@ -47,18 +47,21 @@ export function resolveHeroSlides(home?: SiteSettings['homepage']) {
     }
   }
 
-  const fallbackUrl = normalizeAssetUrl(home?.heroImageUrl, DEFAULT_IMAGES.hero) ?? DEFAULT_IMAGES.hero
+  const hero = normalizeAssetUrl(home?.heroImageUrl, DEFAULT_IMAGES.hero) ?? DEFAULT_IMAGES.hero
+  const terminal = normalizeAssetUrl(home?.heroTerminalImageUrl, DEFAULT_IMAGES.heroTerminal) ?? DEFAULT_IMAGES.heroTerminal
+  const cta = normalizeAssetUrl(home?.ctaImageUrl, DEFAULT_IMAGES.ctaBand) ?? DEFAULT_IMAGES.ctaBand
+
+  const fallbackSources = [hero, terminal, cta].filter((url, i, arr) => arr.indexOf(url) === i)
+
   return {
     slider,
-    slides: [
-      {
-        id: 'hero-fallback',
-        imageUrl: fallbackUrl,
-        alt: 'Trader analyzing live market charts',
-        previewLabel: preview?.label,
-        previewTitle: preview?.title,
-      },
-    ] satisfies HeroSlide[],
+    slides: fallbackSources.map((imageUrl, i) => ({
+      id: `hero-fallback-${i}`,
+      imageUrl,
+      alt: i === 0 ? 'Trader analyzing live market charts' : 'Trading curriculum preview',
+      previewLabel: preview?.label,
+      previewTitle: preview?.title,
+    })) satisfies HeroSlide[],
   }
 }
 

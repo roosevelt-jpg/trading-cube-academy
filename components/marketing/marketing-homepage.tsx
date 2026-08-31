@@ -76,15 +76,9 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
           <Eyebrow className="mb-5">{home.eyebrow}</Eyebrow>
           <h1 className="h1 mb-5 text-[46px] leading-[1.12]">{home.headline}</h1>
           <p className="muted mb-8 max-w-[480px] text-base leading-relaxed">{home.description}</p>
-          <div className="mb-8 flex flex-wrap gap-3.5">
-            <Btn href="/contact">{ctas.requestAccess}</Btn>
-            <Btn variant="ghost" href="/login">{ctas.memberLogin}</Btn>
-          </div>
           <p className="mono muted text-[11.5px] tracking-wide">{home.trustLine}</p>
         </div>
-        {heroSlides.length > 0 && (
-          <HeroSlider slides={heroSlides} settings={heroSlider} />
-        )}
+        <HeroSlider slides={heroSlides} settings={heroSlider} />
       </section>
 
       <div className="mkt-stat-strip">
@@ -248,7 +242,6 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
             <Link href="/about">About</Link>
             <Link href="/method">Method</Link>
             <Link href="/resources">Resources</Link>
-            <Link href="/login">{ctas.memberLogin}</Link>
           </div>
           <div className="mkt-footer-col">
             <h4>{settings.footer?.contactTitle ?? 'Contact'}</h4>

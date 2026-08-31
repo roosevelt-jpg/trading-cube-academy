@@ -57,30 +57,37 @@ export function HeroSlider({ slides, settings: rawSettings, className }: Props) 
 
   return (
     <div
-      className={cn('hero-slider relative min-h-[240px] flex-1 overflow-hidden border border-[var(--border)] md:min-h-[340px] lg:max-w-[520px]', className)}
+      className={cn(
+        'hero-slider relative min-h-[280px] w-full flex-1 overflow-hidden border border-[var(--border)] md:min-h-[340px] lg:max-w-[520px]',
+        className,
+      )}
       onMouseEnter={() => settings.pauseOnHover !== false && setPaused(true)}
       onMouseLeave={() => settings.pauseOnHover !== false && setPaused(false)}
       aria-roledescription="carousel"
       aria-label="Hero image slider"
     >
       <div
-        className={cn('hero-slider-track size-full', `hero-slider-${transition}`, animate && 'hero-slider-animate')}
+        className={cn(
+          'hero-slider-track absolute inset-0',
+          `hero-slider-${transition}`,
+          animate && 'hero-slider-animate',
+        )}
         style={{ '--hero-slide-duration': `${durationMs}ms` } as React.CSSProperties}
       >
         {slides.map((slide, i) => (
-            <div
-              key={slide.id}
-              className={cn('hero-slide absolute inset-0', i === index && 'hero-slide-active')}
-              aria-hidden={i !== index}
-            >
-              <img
-                src={slide.imageUrl}
-                alt={slide.alt ?? 'Hero slide'}
-                className="size-full object-cover"
-                loading={i === 0 ? 'eager' : 'lazy'}
-              />
-            </div>
-          ))}
+          <div
+            key={slide.id}
+            className={cn('hero-slide absolute inset-0', i === index && 'hero-slide-active')}
+            aria-hidden={i !== index}
+          >
+            <img
+              src={slide.imageUrl}
+              alt={slide.alt ?? 'Hero slide'}
+              className="size-full object-cover"
+              loading={i === 0 ? 'eager' : 'lazy'}
+            />
+          </div>
+        ))}
       </div>
 
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[var(--bg)] via-transparent to-transparent" />

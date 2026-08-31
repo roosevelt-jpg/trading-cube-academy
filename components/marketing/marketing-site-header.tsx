@@ -46,7 +46,7 @@ export function MarketingSiteHeader({ settings }: { settings: SiteSettings }) {
       <div className="flex gap-3">
         <Btn variant="ghost" size="sm" href="/login">{ctas.memberLogin}</Btn>
         <Btn variant="primary" size="sm" href="/contact">
-          {ctas.requestAccess?.replace(' →', '') ?? 'Request Access'}
+          {ctas.requestAccess ?? 'Request Access →'}
         </Btn>
       </div>
     </header>

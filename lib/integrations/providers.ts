@@ -34,7 +34,7 @@ export const INTEGRATION_PROVIDERS: IntegrationProviderDef[] = [
   {
     provider: 'blob',
     label: 'Vercel Blob Storage',
-    description: 'Store course materials, logos, and admin-uploaded images.',
+    description: 'Store CMS images, course materials, logos, and proctoring recordings.',
     fields: [
       { key: 'read_write_token', label: 'Read/write token', secret: true, placeholder: 'vercel_blob_rw_...' },
     ],

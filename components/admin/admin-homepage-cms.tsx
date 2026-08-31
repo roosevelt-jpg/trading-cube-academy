@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useRealtimeQuery } from '@/lib/hooks/use-realtime-query'
 import { DEFAULT_HOMEPAGE_SECTIONS, DEFAULT_NAVIGATION, defaultMarketingBundle } from '@/lib/defaults/cms-defaults'
 import { Btn, Eyebrow, LoadingState, Panel } from '@/components/ui/academy-ui'
+import { BlobUploadField } from '@/components/admin/blob-upload-field'
+import type { BlobCategory } from '@/lib/storage/blob'
 import type {
   FaqItem,
   MarketingPillar,
@@ -138,8 +140,8 @@ export function AdminHomepageCmsView() {
             <Field label="Headline" value={hp.headline ?? ''} onChange={(v) => setHomepageDraft((d) => ({ ...d, headline: v }))} />
             <Field label="Description" value={hp.description ?? ''} multiline onChange={(v) => setHomepageDraft((d) => ({ ...d, description: v }))} />
             <Field label="Trust line" value={hp.trustLine ?? ''} onChange={(v) => setHomepageDraft((d) => ({ ...d, trustLine: v }))} />
-            <Field label="Hero image URL" value={hp.heroImageUrl ?? ''} onChange={(v) => setHomepageDraft((d) => ({ ...d, heroImageUrl: v }))} />
-            <Field label="CTA band image URL" value={hp.ctaImageUrl ?? ''} onChange={(v) => setHomepageDraft((d) => ({ ...d, ctaImageUrl: v }))} />
+            <BlobUploadField label="Hero image" value={hp.heroImageUrl ?? ''} onChange={(v) => setHomepageDraft((d) => ({ ...d, heroImageUrl: v }))} category="marketing" />
+            <BlobUploadField label="CTA band image" value={hp.ctaImageUrl ?? ''} onChange={(v) => setHomepageDraft((d) => ({ ...d, ctaImageUrl: v }))} category="marketing" />
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Hero preview label" value={hp.heroPreview?.label ?? ''} onChange={(v) => setHomepageDraft((d) => ({ ...d, heroPreview: { ...hp.heroPreview, label: v } }))} />
               <Field label="Hero preview title" value={hp.heroPreview?.title ?? ''} onChange={(v) => setHomepageDraft((d) => ({ ...d, heroPreview: { ...hp.heroPreview, title: v } }))} />
@@ -251,7 +253,7 @@ export function AdminHomepageCmsView() {
             { key: 'quote', label: 'Quote', multiline: true },
             { key: 'author_name', label: 'Author name' },
             { key: 'author_meta', label: 'Author meta' },
-            { key: 'image_url', label: 'Avatar image URL' },
+            { key: 'image_url', label: 'Avatar image', uploadCategory: 'testimonials' as BlobCategory },
           ]}
           onSave={(id, patch) => updateRow('testimonials', id, patch)}
           onDelete={(id) => deleteRow('testimonials', id)}
@@ -315,7 +317,7 @@ function TableEditor({
 }: {
   title: string
   rows: Record<string, unknown>[]
-  columns: { key: string; label: string; multiline?: boolean }[]
+  columns: { key: string; label: string; multiline?: boolean; uploadCategory?: BlobCategory }[]
   onSave: (id: string, patch: Record<string, unknown>) => void
   onDelete: (id: string) => void
   onAdd: () => void
@@ -336,39 +338,53 @@ function TableEditor({
           <Panel key={id} className="space-y-3 p-5">
             {columns.map((col) => (
               <div key={col.key} className="input-group">
-                <label>{col.label}</label>
-                {col.multiline ? (
-                  <textarea
-                    className="input min-h-[72px]"
+                {col.uploadCategory ? (
+                  <BlobUploadField
+                    label={col.label}
                     value={val(col.key)}
-                    onChange={(e) => setDrafts((d) => ({ ...d, [id]: { ...d[id], [col.key]: e.target.value } }))}
-                    onBlur={() => {
-                      if (draft[col.key] !== undefined) {
-                        void onSave(id, { [col.key]: draft[col.key] })
-                        setDrafts((d) => {
-                          const next = { ...d }
-                          delete next[id]
-                          return next
-                        })
-                      }
+                    onChange={(url) => {
+                      void onSave(id, { [col.key]: url })
                     }}
+                    category={col.uploadCategory}
                   />
+                ) : col.multiline ? (
+                  <>
+                    <label>{col.label}</label>
+                    <textarea
+                      className="input min-h-[72px]"
+                      value={val(col.key)}
+                      onChange={(e) => setDrafts((d) => ({ ...d, [id]: { ...d[id], [col.key]: e.target.value } }))}
+                      onBlur={() => {
+                        if (draft[col.key] !== undefined) {
+                          void onSave(id, { [col.key]: draft[col.key] })
+                          setDrafts((d) => {
+                            const next = { ...d }
+                            delete next[id]
+                            return next
+                          })
+                        }
+                      }}
+                    />
+                  </>
                 ) : (
-                  <input
-                    className="input"
-                    value={val(col.key)}
-                    onChange={(e) => setDrafts((d) => ({ ...d, [id]: { ...d[id], [col.key]: e.target.value } }))}
-                    onBlur={() => {
-                      if (draft[col.key] !== undefined) {
-                        void onSave(id, { [col.key]: draft[col.key] })
-                        setDrafts((d) => {
-                          const next = { ...d }
-                          delete next[id]
-                          return next
-                        })
-                      }
-                    }}
-                  />
+                  <>
+                    <label>{col.label}</label>
+                    <input
+                      className="input"
+                      value={val(col.key)}
+                      onChange={(e) => setDrafts((d) => ({ ...d, [id]: { ...d[id], [col.key]: e.target.value } }))}
+                      onBlur={() => {
+                        if (draft[col.key] !== undefined) {
+                          void onSave(id, { [col.key]: draft[col.key] })
+                          setDrafts((d) => {
+                            const next = { ...d }
+                            delete next[id]
+                            return next
+                          })
+                        }
+                      }}
+                    />
+                  </>
                 )}
               </div>
             ))}

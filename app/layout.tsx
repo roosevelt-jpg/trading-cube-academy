@@ -8,21 +8,8 @@ export const metadata: Metadata = {
   description: 'A structured trading education built for clarity, process, and progress.',
   generator: 'v0.app',
   icons: {
-    icon: [
-      {
-        url: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/WhatsApp%20Image%202026-08-28%20at%2001.07.23-KxSUitIOxLLo5caKphzA7Ia47n2FEi.jpeg',
-        media: '(prefers-color-scheme: light)',
-      },
-      {
-        url: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/WhatsApp%20Image%202026-08-28%20at%2001.07.23-KxSUitIOxLLo5caKphzA7Ia47n2FEi.jpeg',
-        media: '(prefers-color-scheme: dark)',
-      },
-      {
-        url: '/icon.svg',
-        type: 'image/svg+xml',
-      },
-    ],
-    apple: 'https://hebbkx1anhila5yf.public.blob.vercel-storage.com/WhatsApp%20Image%202026-08-28%20at%2001.07.23-D8C5TWxVNOEeiu6W2ZKK0Lre5mPu6G.jpeg',
+    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+    apple: '/brand/logo-banner.jpg',
   },
 }
 

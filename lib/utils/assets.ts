@@ -1,15 +1,21 @@
 import { DEFAULT_IMAGES } from '@/lib/defaults/cms-defaults'
 
-const BROKEN_HOSTS = ['unsplash.com', 'picsum.photos', 'blob.vercel-storage.com']
+const BROKEN_HOSTS = ['unsplash.com', 'picsum.photos']
+
+/** Legacy v0 WhatsApp image blobs and other known-bad external URLs. */
+export function isLegacyBrokenAssetUrl(url?: string | null) {
+  if (!url?.trim()) return true
+  if (url.includes('WhatsApp')) return true
+  return BROKEN_HOSTS.some((host) => url.includes(host))
+}
 
 export function isBrokenAssetUrl(url?: string | null) {
-  if (!url?.trim()) return true
-  return BROKEN_HOSTS.some((host) => url.includes(host)) || url.includes('WhatsApp')
+  return isLegacyBrokenAssetUrl(url)
 }
 
 /** Replace broken external image URLs with a local fallback. */
 export function normalizeAssetUrl(url?: string | null, fallback = DEFAULT_IMAGES.hero) {
-  if (!url?.trim() || isBrokenAssetUrl(url)) return fallback
+  if (!url?.trim() || isLegacyBrokenAssetUrl(url)) return fallback
   return url
 }
 

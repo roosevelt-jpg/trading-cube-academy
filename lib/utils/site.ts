@@ -1,4 +1,5 @@
 import type { SiteSettings } from '@/lib/types/database'
+import { isLegacyBrokenAssetUrl } from '@/lib/utils/assets'
 
 export const DEFAULT_LOGO_ICON = '/brand/logo-icon.svg'
 export const DEFAULT_LOGO_BANNER = '/brand/logo-banner.jpg'
@@ -6,9 +7,7 @@ export const DEFAULT_LOGO_BANNER = '/brand/logo-banner.jpg'
 export function logoIconSrc(settings?: SiteSettings) {
   const path = settings?.branding?.logoIconPathname ?? settings?.branding?.logoPathname
   if (typeof path === 'string' && path.trim()) {
-    if (path.includes('WhatsApp') || path.includes('blob.vercel-storage.com')) {
-      return DEFAULT_LOGO_ICON
-    }
+    if (isLegacyBrokenAssetUrl(path)) return DEFAULT_LOGO_ICON
     return path.startsWith('http') ? path : path.startsWith('/') ? path : `/api/materials/file?pathname=${encodeURIComponent(path)}`
   }
   return DEFAULT_LOGO_ICON
@@ -17,9 +16,7 @@ export function logoIconSrc(settings?: SiteSettings) {
 export function logoBannerSrc(settings?: SiteSettings) {
   const path = settings?.branding?.logoBannerPathname ?? settings?.branding?.logoPathname
   if (typeof path === 'string' && path.trim() && !path.endsWith('.svg') && !path.includes('logo-icon')) {
-    if (path.includes('WhatsApp') || path.includes('blob.vercel-storage.com')) {
-      return DEFAULT_LOGO_BANNER
-    }
+    if (isLegacyBrokenAssetUrl(path)) return DEFAULT_LOGO_BANNER
     return path.startsWith('http') ? path : path.startsWith('/') ? path : `/api/materials/file?pathname=${encodeURIComponent(path)}`
   }
   return DEFAULT_LOGO_BANNER

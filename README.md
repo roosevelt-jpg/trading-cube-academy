@@ -7,7 +7,7 @@ A deployment-ready CMS/LMS for structured trading education. All marketing copy,
 - **Next.js 16** (App Router)
 - **Supabase** (Auth, Postgres, Row Level Security, Realtime)
 - **Tailwind CSS 4** (mockup-aligned design system)
-- **Vercel Blob** (optional course material uploads)
+- **Vercel Blob** — all CMS images, course materials, and quiz proctoring recordings
 
 ## Features
 
@@ -94,10 +94,22 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 SUPABASE_SECRET_KEY=your-secret-key
 ```
 
-Optional for material uploads and **quiz proctoring recordings** (also configurable in Admin → Integrations):
+Optional for **all file storage** (also configurable in Admin → Integrations):
 
 ```env
 BLOB_READ_WRITE_TOKEN=vercel_blob_token
+```
+
+| Storage | Access | Path prefix | Admin UI |
+|---------|--------|-------------|----------|
+| CMS images (hero, logos, course cards, avatars) | Public | `marketing/`, `branding/`, `courses/`, … | Settings, Homepage CMS, Pages — **Upload** button |
+| Course materials (PDFs, docs) | Private | `course-materials/` | Admin → Integrations / materials API |
+| Quiz proctoring recordings | Public (admin review URL) | `quiz-proctoring/` | Quiz builder → proctoring tab |
+
+Local `/public` assets ship as fallbacks when no blob URL is set. To migrate defaults to Blob:
+
+```bash
+node scripts/upload-public-assets-to-blob.mjs
 ```
 
 ### YouTube Data API (Admin → Integrations)

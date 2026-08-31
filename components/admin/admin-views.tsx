@@ -14,6 +14,7 @@ import type { AdminDashboardData } from '@/lib/data/server-dashboard'
 import { AdminQuizBuilder } from '@/components/admin/admin-quiz-builder'
 import { AdminVideoManager } from '@/components/admin/admin-video-manager'
 import { AdminHomepageCmsView } from '@/components/admin/admin-homepage-cms'
+import { BlobUploadField } from '@/components/admin/blob-upload-field'
 
 export { AdminQuizBuilder, AdminVideoManager, AdminHomepageCmsView }
 
@@ -133,10 +134,12 @@ export function AdminCourseDetailView({ courseSlug }: { courseSlug: string }) {
       <Panel className="mb-6 space-y-4 p-5">
         <div className="input-group"><label>Course title</label><input className="input" defaultValue={data.course.title} onChange={(e) => setTitle(e.target.value)} /></div>
         <div className="input-group"><label>Card description</label><textarea className="input min-h-[80px]" defaultValue={data.course.description ?? ''} onChange={(e) => setDescription(e.target.value)} /></div>
-        <div className="input-group"><label>Card image URL</label><input className="input" defaultValue={data.course.image_url ?? ''} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://images.unsplash.com/..." /></div>
-        {(imageUrl || data.course.image_url) && (
-          <img src={imageUrl || data.course.image_url || ''} alt="Course card preview" className="h-36 w-full max-w-sm object-cover" />
-        )}
+        <BlobUploadField
+          label="Card image"
+          value={imageUrl || data.course.image_url || ''}
+          onChange={setImageUrl}
+          category="courses"
+        />
         <Btn size="sm" onClick={saveCourse}>Save course details</Btn>
       </Panel>
       <div className="space-y-3">
@@ -417,7 +420,12 @@ export function AdminPageEditor({ slug }: { slug: string }) {
         <div className="input-group"><label>Title</label><input className="input" value={current.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} /></div>
         <div className="input-group"><label>Eyebrow</label><input className="input" value={current.eyebrow ?? ''} onChange={(e) => setDraft({ ...draft, eyebrow: e.target.value })} /></div>
         <div className="input-group"><label>Description</label><textarea className="input min-h-[100px]" value={current.description ?? ''} onChange={(e) => setDraft({ ...draft, description: e.target.value })} /></div>
-        <div className="input-group"><label>Hero image URL</label><input className="input" value={current.hero_image_url ?? ''} onChange={(e) => setDraft({ ...draft, hero_image_url: e.target.value })} placeholder="https://images.unsplash.com/..." /></div>
+        <BlobUploadField
+          label="Hero image"
+          value={current.hero_image_url ?? ''}
+          onChange={(url) => setDraft({ ...draft, hero_image_url: url })}
+          category="pages"
+        />
       </Panel>
 
       <Eyebrow className="mt-8 mb-4">Sections</Eyebrow>
@@ -503,15 +511,26 @@ export function AdminSettingsView({ initialSettings }: { initialSettings?: SiteS
     <div className="content-pad max-w-3xl">
       <Eyebrow>Academy settings</Eyebrow>
       <h1 className="h1 mt-2 text-3xl">Branding, images & copy</h1>
-      <p className="muted mt-2 text-sm">Replace any image URL with your own asset or upload to Vercel Blob and paste the link.</p>
+      <p className="muted mt-2 text-sm">Upload images directly to Vercel Blob or paste a URL. All CMS images and private course files use the same storage.</p>
 
       <Panel className="mt-8 space-y-4 p-6">
         <Eyebrow>Branding</Eyebrow>
         <div className="input-group"><label>Academy name</label><input className="input" defaultValue={branding.companyName} onChange={(e) => setDraft({ ...draft, branding: { ...branding, companyName: e.target.value } })} /></div>
         <div className="input-group"><label>Tagline</label><input className="input" defaultValue={branding.tagline} onChange={(e) => setDraft({ ...draft, branding: { ...branding, tagline: e.target.value } })} /></div>
-        <div className="input-group"><label>Logo icon URL</label><input className="input" defaultValue={branding.logoIconPathname ?? branding.logoPathname} onChange={(e) => setDraft({ ...draft, branding: { ...branding, logoIconPathname: e.target.value } })} placeholder="/brand/logo-icon.svg" /></div>
-        <div className="input-group"><label>Logo banner URL (wordmark)</label><input className="input" defaultValue={branding.logoBannerPathname} onChange={(e) => setDraft({ ...draft, branding: { ...branding, logoBannerPathname: e.target.value, logoPathname: e.target.value } })} placeholder="/brand/logo-banner.jpg" /></div>
-        {(branding.logoBannerPathname ?? branding.logoPathname) && <img src={branding.logoBannerPathname ?? branding.logoPathname} alt="Logo preview" className="h-10 w-auto max-w-[220px] object-contain" />}
+        <BlobUploadField
+          label="Logo icon"
+          value={branding.logoIconPathname ?? branding.logoPathname ?? ''}
+          onChange={(url) => setDraft({ ...draft, branding: { ...branding, logoIconPathname: url } })}
+          category="branding"
+          placeholder="/brand/logo-icon.svg"
+        />
+        <BlobUploadField
+          label="Logo banner (wordmark)"
+          value={branding.logoBannerPathname ?? ''}
+          onChange={(url) => setDraft({ ...draft, branding: { ...branding, logoBannerPathname: url, logoPathname: url } })}
+          category="branding"
+          placeholder="/brand/logo-banner.jpg"
+        />
       </Panel>
 
       <Panel className="mt-6 space-y-4 p-6">
@@ -521,10 +540,24 @@ export function AdminSettingsView({ initialSettings }: { initialSettings?: SiteS
         <div className="input-group"><label>Hero headline</label><input className="input" defaultValue={hp.headline} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, headline: e.target.value } })} /></div>
         <div className="input-group"><label>Hero description</label><textarea className="input min-h-[100px]" defaultValue={hp.description} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, description: e.target.value } })} /></div>
         <div className="input-group"><label>Trust line</label><input className="input" defaultValue={hp.trustLine} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, trustLine: e.target.value } })} /></div>
-        <div className="input-group"><label>Hero image URL</label><input className="input" defaultValue={hp.heroImageUrl} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, heroImageUrl: e.target.value } })} placeholder="Trading charts / market desk photo" /></div>
-        <div className="input-group"><label>Hero terminal overlay URL</label><input className="input" defaultValue={hp.heroTerminalImageUrl} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, heroTerminalImageUrl: e.target.value } })} placeholder="Optional secondary hero image" /></div>
-        <div className="input-group"><label>CTA band image URL</label><input className="input" defaultValue={hp.ctaImageUrl} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, ctaImageUrl: e.target.value } })} placeholder="Trading floor / execution image" /></div>
-        {hp.heroImageUrl && <img src={hp.heroImageUrl} alt="Hero preview" className="h-40 w-full object-cover" />}
+        <BlobUploadField
+          label="Hero image"
+          value={hp.heroImageUrl ?? ''}
+          onChange={(url) => setDraft({ ...draft, homepage: { ...hp, heroImageUrl: url } })}
+          category="marketing"
+        />
+        <BlobUploadField
+          label="Hero terminal overlay"
+          value={hp.heroTerminalImageUrl ?? ''}
+          onChange={(url) => setDraft({ ...draft, homepage: { ...hp, heroTerminalImageUrl: url } })}
+          category="marketing"
+        />
+        <BlobUploadField
+          label="CTA band image"
+          value={hp.ctaImageUrl ?? ''}
+          onChange={(url) => setDraft({ ...draft, homepage: { ...hp, ctaImageUrl: url } })}
+          category="marketing"
+        />
         <p className="muted text-xs">Use trading-industry photos (charts, terminals, risk dashboards). Changes sync live to the homepage and contact page.</p>
       </Panel>
 
@@ -560,7 +593,11 @@ function CourseImageEditor({ onSave }: { onSave: (id: string, url: string) => vo
         <div key={c.id} className="flex flex-wrap items-center gap-4 border-b border-[var(--border-soft)] pb-4 last:border-0">
           {c.image_url && <img src={c.image_url} alt={c.title} className="size-16 object-cover" />}
           <div className="min-w-[140px] flex-1 text-sm font-medium">{c.title}</div>
-          <input className="input max-w-md flex-1" defaultValue={c.image_url ?? ''} onBlur={(e) => onSave(c.id, e.target.value)} placeholder="Image URL" />
+          <BlobUploadField
+            value={c.image_url ?? ''}
+            onChange={(url) => onSave(c.id, url)}
+            category="courses"
+          />
         </div>
       ))}
     </Panel>
@@ -582,7 +619,11 @@ function TestimonialImageEditor({ onSave }: { onSave: (id: string, url: string) 
         <div key={t.id} className="flex flex-wrap items-center gap-4 border-b border-[var(--border-soft)] pb-4 last:border-0">
           {t.image_url && <img src={t.image_url} alt={t.author_name} className="size-10 rounded-full object-cover" />}
           <div className="min-w-[100px] flex-1 text-sm">{t.author_name}</div>
-          <input className="input max-w-md flex-1" defaultValue={t.image_url ?? ''} onBlur={(e) => onSave(t.id, e.target.value)} placeholder="Avatar URL" />
+          <BlobUploadField
+            value={t.image_url ?? ''}
+            onChange={(url) => onSave(t.id, url)}
+            category="testimonials"
+          />
         </div>
       ))}
     </Panel>

@@ -1,5 +1,5 @@
-import { put } from '@vercel/blob'
 import { NextResponse } from 'next/server'
+import { uploadToBlob } from '@/lib/storage/blob-server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getSupabaseEnv } from '@/lib/supabase/env'
@@ -39,12 +39,9 @@ export async function POST(request: Request) {
 
   if (file instanceof File && file.size > 0) {
     fileSize = file.size
-    const pathname = `quiz-proctoring/${user.id}/${attemptId}-${Date.now()}.webm`
+    const fileName = `proctor-${attemptId}-${Date.now()}.webm`
     try {
-      const blob = await put(pathname, file, {
-        access: 'public',
-        contentType: file.type || 'video/webm',
-      })
+      const blob = await uploadToBlob('proctoring', user.id, file, fileName, file.type || 'video/webm')
       blobUrl = blob.url
       blobPathname = blob.pathname
     } catch (e) {

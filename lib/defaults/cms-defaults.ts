@@ -286,7 +286,7 @@ export function defaultPage(slug: string) {
 
 export function normalizeAssetUrl(url?: string | null, fallback?: string) {
   if (!url?.trim()) return fallback ?? DEFAULT_IMAGES.hero
-  if (url.includes('unsplash.com') || url.includes('picsum.photos') || url.includes('WhatsApp') || url.includes('blob.vercel-storage.com')) {
+  if (url.includes('unsplash.com') || url.includes('picsum.photos') || url.includes('WhatsApp')) {
     return fallback ?? DEFAULT_IMAGES.hero
   }
   return url
@@ -313,15 +313,15 @@ export function mergeSettings(db: Record<string, unknown> | null | undefined) {
   homepage.ctaImageUrl = normalizeAssetUrl(homepage.ctaImageUrl, DEFAULT_IMAGES.ctaBand) ?? DEFAULT_IMAGES.ctaBand
 
   const branding = { ...base.branding, ...(db.branding as object) }
-  if (branding.logoBannerPathname?.includes('WhatsApp') || branding.logoBannerPathname?.includes('blob.vercel-storage.com')) {
+  if (branding.logoBannerPathname?.includes('WhatsApp')) {
     branding.logoBannerPathname = DEFAULT_IMAGES.logoBanner
   }
-  if (branding.logoPathname?.includes('WhatsApp') || branding.logoPathname?.includes('blob.vercel-storage.com')) {
+  if (branding.logoPathname?.includes('WhatsApp')) {
     branding.logoPathname = DEFAULT_IMAGES.logoBanner
   }
 
   const images = { ...base.images, ...(db.images as object) } as typeof base.images
-  if (typeof images.logo === 'string' && (images.logo.includes('WhatsApp') || images.logo.includes('blob.vercel-storage.com') || images.logo.includes('unsplash.com'))) {
+  if (typeof images.logo === 'string' && (images.logo.includes('WhatsApp') || images.logo.includes('unsplash.com'))) {
     images.logo = DEFAULT_IMAGES.logoBanner
   }
   if (images.pillars && typeof images.pillars === 'object') {

@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { touchLastActive } from '@/lib/auth/touch-last-active'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseEnv } from '@/lib/supabase/env'
 
@@ -26,6 +27,8 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   }
 
   const userId = data.user?.id
+  if (userId) await touchLastActive(supabase, userId)
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')

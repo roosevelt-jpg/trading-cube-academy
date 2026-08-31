@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getSupabaseEnv } from '@/lib/supabase/env'
+import { mergeQuizAnswers } from '@/lib/quiz/order'
 
 export async function POST(request: Request) {
   if (!getSupabaseEnv().configured) {
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
   const service = createServiceClient()
   const { data: attempt } = await service
     .from('quiz_attempts')
-    .select('id, user_id, status')
+    .select('id, user_id, status, answers')
     .eq('id', attemptId)
     .eq('user_id', user.id)
     .maybeSingle()
@@ -36,7 +37,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Attempt is not in progress' }, { status: 409 })
   }
 
-  const { error } = await service.from('quiz_attempts').update({ answers }).eq('id', attemptId)
+  const merged = mergeQuizAnswers(
+    (attempt.answers ?? {}) as Record<string, string>,
+    answers,
+  )
+
+  const { error } = await service.from('quiz_attempts').update({ answers: merged }).eq('id', attemptId)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })

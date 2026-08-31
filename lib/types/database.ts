@@ -41,7 +41,7 @@ export type HeroSliderSettings = {
 }
 
 export type SiteSettings = {
-  branding?: { companyName?: string; tagline?: string; logoPathname?: string; logoIconPathname?: string; logoBannerPathname?: string }
+  branding?: { companyName?: string; tagline?: string; logoPathname?: string; logoIconPathname?: string; logoBannerPathname?: string; accentColor?: string }
   homepage?: {
     eyebrow?: string
     headline?: string

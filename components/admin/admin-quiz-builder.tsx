@@ -29,6 +29,10 @@ export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
   const [newQuestion, setNewQuestion] = useState('')
   const [newOptions, setNewOptions] = useState(EMPTY_OPTIONS)
   const [savingQuestion, setSavingQuestion] = useState(false)
+  const [editingQuestionId, setEditingQuestionId] = useState<string | null>(null)
+  const [editQuestionText, setEditQuestionText] = useState('')
+  const [editOptions, setEditOptions] = useState<{ id?: string; text: string; correct: boolean }[]>([])
+  const [savingEdit, setSavingEdit] = useState(false)
 
   const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data: course } = await client.from('courses').select('id,title,slug').eq('slug', courseSlug).maybeSingle()
@@ -161,7 +165,48 @@ export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
 
   const deleteQuestion = async (questionId: string) => {
     await createClient().from('quiz_questions').delete().eq('id', questionId)
+    setEditingQuestionId(null)
     reloadModule()
+  }
+
+  const startEditQuestion = (questionId: string) => {
+    const q = questions.find((item) => item.id === questionId)
+    if (!q) return
+    const opts = (optionsByQuestion[questionId] ?? []).sort((a, b) => a.sort_order - b.sort_order)
+    setEditingQuestionId(questionId)
+    setEditQuestionText(q.question)
+    setEditOptions(
+      opts.length
+        ? opts.map((o) => ({ id: o.id, text: o.option_text, correct: o.is_correct }))
+        : EMPTY_OPTIONS(),
+    )
+    setShowAddForm(false)
+  }
+
+  const saveEditedQuestion = async () => {
+    if (!editingQuestionId || !editQuestionText.trim()) return
+    const filled = editOptions.filter((o) => o.text.trim())
+    if (filled.length < 2 || !filled.some((o) => o.correct)) return
+
+    setSavingEdit(true)
+    try {
+      const client = createClient()
+      await client.from('quiz_questions').update({ question: editQuestionText.trim() }).eq('id', editingQuestionId)
+      await client.from('quiz_options').delete().eq('question_id', editingQuestionId)
+      await client.from('quiz_options').insert(
+        filled.map((o, i) => ({
+          question_id: editingQuestionId,
+          option_text: o.text.trim(),
+          is_correct: o.correct,
+          sort_order: i,
+        })),
+      )
+
+      setEditingQuestionId(null)
+      reloadModule()
+    } finally {
+      setSavingEdit(false)
+    }
   }
 
   const currentTimeMins = timeLimitMinutes ?? (settings?.time_limit_seconds ? Math.round(settings.time_limit_seconds / 60) : 0)
@@ -270,16 +315,45 @@ export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
             <Panel key={question.id} className="p-5">
               <div className="mb-3 flex items-start justify-between gap-4">
                 <p className="mono muted text-xs">Question {qi + 1} of {questions.length}</p>
-                <button type="button" className="mono text-xs text-red-400 hover:underline" onClick={() => void deleteQuestion(question.id)}>Delete</button>
+                <div className="flex gap-3">
+                  {editingQuestionId !== question.id && (
+                    <button type="button" className="mono text-xs text-yellow hover:underline" onClick={() => startEditQuestion(question.id)}>Edit</button>
+                  )}
+                  <button type="button" className="mono text-xs text-red-400 hover:underline" onClick={() => void deleteQuestion(question.id)}>Delete</button>
+                </div>
               </div>
-              <p className="mb-4 text-sm font-medium">{question.question}</p>
-              <ul className="space-y-2">
-                {(optionsByQuestion[question.id] ?? []).sort((a, b) => a.sort_order - b.sort_order).map((o) => (
-                  <li key={o.id} className={`rounded border px-3 py-2 text-sm ${o.is_correct ? 'border-green/40 bg-green/5 text-green' : 'border-[var(--border-soft)]'}`}>
-                    {o.option_text}{o.is_correct ? ' ✓' : ''}
-                  </li>
-                ))}
-              </ul>
+              {editingQuestionId === question.id ? (
+                <div className="space-y-4">
+                  <div className="input-group">
+                    <label>Question text</label>
+                    <textarea className="input min-h-[80px]" value={editQuestionText} onChange={(e) => setEditQuestionText(e.target.value)} />
+                  </div>
+                  <p className="mono muted text-[11px]">Answer options (mark one correct)</p>
+                  {editOptions.map((opt, i) => (
+                    <div key={opt.id ?? i} className="flex items-center gap-3">
+                      <input type="radio" name={`edit-correct-${question.id}`} checked={opt.correct} onChange={() => setEditOptions(editOptions.map((o, j) => ({ ...o, correct: j === i })))} className="accent-yellow" />
+                      <input className="input flex-1" value={opt.text} onChange={(e) => setEditOptions(editOptions.map((o, j) => j === i ? { ...o, text: e.target.value } : o))} placeholder={`Option ${i + 1}`} />
+                    </div>
+                  ))}
+                  <div className="flex gap-2">
+                    <Btn size="sm" onClick={() => void saveEditedQuestion()} disabled={savingEdit || !editQuestionText.trim()}>
+                      {savingEdit ? 'Saving…' : 'Save changes'}
+                    </Btn>
+                    <Btn size="sm" variant="ghost" onClick={() => setEditingQuestionId(null)}>Cancel</Btn>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="mb-4 text-sm font-medium">{question.question}</p>
+                  <ul className="space-y-2">
+                    {(optionsByQuestion[question.id] ?? []).sort((a, b) => a.sort_order - b.sort_order).map((o) => (
+                      <li key={o.id} className={`rounded border px-3 py-2 text-sm ${o.is_correct ? 'border-green/40 bg-green/5 text-green' : 'border-[var(--border-soft)]'}`}>
+                        {o.option_text}{o.is_correct ? ' ✓' : ''}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
             </Panel>
               )
             })}

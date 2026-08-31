@@ -43,6 +43,24 @@ export async function POST(request: Request) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  const { data: enrollmentRow } = await service
+    .from('site_settings')
+    .select('value')
+    .eq('key', 'enrollment')
+    .maybeSingle()
+  const enrollment = (enrollmentRow?.value ?? {}) as {
+    passingScoreDefault?: number
+    maxQuizAttempts?: number
+  }
+
+  await service.from('module_quiz_settings').insert({
+    module_id: mod.id,
+    passing_score: enrollment.passingScoreDefault ?? 70,
+    attempts_allowed: enrollment.maxQuizAttempts ?? 3,
+    question_order: 'sequential',
+    proctoring_required: true,
+  })
+
   const { count } = await service.from('modules').select('id', { count: 'exact', head: true }).eq('course_id', courseId)
   await service.from('courses').update({ module_count: count ?? 0 }).eq('id', courseId)
 

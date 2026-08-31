@@ -13,6 +13,7 @@ import { QuizProctor, uploadQuizProctorRecording } from '@/components/quiz/quiz-
 import { LessonSidebar } from '@/components/student/lesson-sidebar'
 import { formatDurationLabel } from '@/lib/youtube/utils'
 import { formatDateTime } from '@/lib/utils/datetime'
+import { decodeQuestionOrder, orderQuestions, QUESTION_ORDER_KEY } from '@/lib/quiz/order'
 import type { Course, Lesson, Module, Profile, QuizAttempt, SiteSettings } from '@/lib/types/database'
 
 type ProgressRow = { module_id?: string; module_key?: string; lesson_id?: string; completed?: boolean; progress_pct?: number }
@@ -660,7 +661,11 @@ export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: 
 
       if (existing) {
         const saved = (existing.answers ?? {}) as Record<string, string>
-        const firstOpen = data.questions.findIndex((q: { id: string }) => !saved[q.id])
+        const resumeQuestions = orderQuestions(
+          data.questions as { id: string }[],
+          decodeQuestionOrder(saved[QUESTION_ORDER_KEY]),
+        )
+        const firstOpen = resumeQuestions.findIndex((q: { id: string }) => !saved[q.id])
         setAttempt(existing)
         setAnswers(saved)
         setQIndex(firstOpen >= 0 ? firstOpen : 0)
@@ -700,12 +705,20 @@ export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: 
   if (loading) return <LoadingState />
   if (!data || !data.questions.length) return <div className="content-pad">No quiz configured.</div>
 
+  const orderSource =
+    (attempt?.answers as Record<string, string> | undefined)?.[QUESTION_ORDER_KEY] ??
+    (data.inProgressAttempt?.answers as Record<string, string> | undefined)?.[QUESTION_ORDER_KEY]
+  const orderedQuestions = orderQuestions(
+    data.questions as { id: string }[],
+    decodeQuestionOrder(orderSource),
+  )
+
   const attemptsRemaining = Math.max(0, data.attemptsAllowed - data.attemptsUsed)
-  const question = data.questions[qIndex]
+  const question = orderedQuestions[qIndex]
   const opts = data.optByQ[question?.id] ?? []
 
   const answeredIndices = new Set<number>()
-  data.questions.forEach((q: { id: string }, i: number) => {
+  orderedQuestions.forEach((q: { id: string }, i: number) => {
     if (answers[q.id]) answeredIndices.add(i)
   })
 
@@ -784,7 +797,7 @@ export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: 
           <h1 className="h2 text-xl">Before you begin</h1>
           <ul className="muted space-y-2 text-sm">
             <li>
-              {data.questions.length} questions · passing score {data.passing}%
+              {orderedQuestions.length} questions · passing score {data.passing}%
             </li>
             <li>
               {attemptsRemaining} attempt{attemptsRemaining === 1 ? '' : 's'} remaining
@@ -841,12 +854,12 @@ export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: 
             </span>
           )}
           <span className="mono muted text-xs">
-            Question {qIndex + 1} of {data.questions.length}
+            Question {qIndex + 1} of {orderedQuestions.length}
           </span>
         </div>
       </div>
 
-      <QuizSegmentBar total={data.questions.length} current={qIndex} answered={answeredIndices} />
+      <QuizSegmentBar total={orderedQuestions.length} current={qIndex} answered={answeredIndices} />
 
       {cameraError && <p className="mb-4 text-sm text-red">{cameraError}</p>}
       <Panel className="mt-4 p-8">
@@ -873,7 +886,7 @@ export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: 
         <Btn variant="ghost" size="sm" onClick={() => setQIndex(Math.max(0, qIndex - 1))} disabled={qIndex === 0}>
           ← Previous
         </Btn>
-        {qIndex < data.questions.length - 1 ? (
+        {qIndex < orderedQuestions.length - 1 ? (
           <Btn size="sm" onClick={() => setQIndex(qIndex + 1)} disabled={!answers[question.id]}>
             Next Question →
           </Btn>
@@ -881,7 +894,7 @@ export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: 
           <Btn
             size="sm"
             onClick={() => void submitQuiz(false)}
-            disabled={submitting || Object.keys(answers).length < data.questions.length}
+            disabled={submitting || orderedQuestions.some((q: { id: string }) => !answers[q.id])}
           >
             {submitting ? 'Submitting…' : 'Submit Quiz'}
           </Btn>

@@ -19,6 +19,7 @@ export function AuthForm({
 }) {
   const configured = getSupabaseEnv().configured
   const bg = settings?.homepage?.heroImageUrl ?? (settings?.images as Record<string, string> | undefined)?.authBackground
+  const inviteOnly = settings?.enrollment?.inviteOnly !== false
 
   const [loginState, loginFormAction, loginPending] = useActionState<LoginState, FormData>(
     loginAction,
@@ -52,6 +53,11 @@ export function AuthForm({
     }
 
     if (mode === 'signup') {
+      if (inviteOnly) {
+        setMessage('Registration is invite-only. Contact the academy to request access.')
+        setBusy(false)
+        return
+      }
       const result = await client.auth.signUp({
         email: normalized,
         password,
@@ -96,9 +102,23 @@ export function AuthForm({
           {mode === 'login' ? 'Members only' : mode === 'signup' ? 'Start your path' : 'Account recovery'}
         </Eyebrow>
         <h1 className="h1 text-3xl">{titles[mode]}</h1>
-        <p className="muted mt-2 text-sm">{subs[mode]}</p>
+        <p className="muted mt-2 text-sm">
+          {mode === 'signup' && inviteOnly
+            ? 'Access is by invitation only. Use the contact page to request an account.'
+            : subs[mode]}
+        </p>
 
-        {mode === 'login' ? (
+        {mode === 'signup' && inviteOnly ? (
+          <div className="mt-8 space-y-4">
+            <p className="text-sm text-yellow">Open registration is disabled. An admin must invite you before you can create an account.</p>
+            <Btn href="/contact" className="w-full">
+              Request access
+            </Btn>
+            <Btn href="/login" variant="ghost" className="w-full">
+              Back to sign in
+            </Btn>
+          </div>
+        ) : mode === 'login' ? (
           <form className="mt-8 space-y-4" action={loginFormAction}>
             <div className="input-group">
               <label htmlFor="login-email">Email address</label>
@@ -176,11 +196,19 @@ export function AuthForm({
         )}
 
         <div className="muted mt-6 text-center text-sm">
-          {mode === 'login' && (
+          {mode === 'login' && !inviteOnly && (
             <>
               Need an account?{' '}
               <Link href="/signup" className="text-yellow">
                 Register
+              </Link>
+            </>
+          )}
+          {mode === 'login' && inviteOnly && (
+            <>
+              Need access?{' '}
+              <Link href="/contact" className="text-yellow">
+                Request an invite
               </Link>
             </>
           )}

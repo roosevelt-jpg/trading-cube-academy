@@ -2,6 +2,12 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getSupabaseEnv } from '@/lib/supabase/env'
+import { touchLastActive } from '@/lib/auth/touch-last-active'
+import {
+  encodeQuestionOrder,
+  QUESTION_ORDER_KEY,
+  shuffleQuestionIds,
+} from '@/lib/quiz/order'
 
 export async function POST(request: Request) {
   if (!getSupabaseEnv().configured) {
@@ -45,12 +51,25 @@ export async function POST(request: Request) {
   const proctoringRequired = settings?.proctoring_required !== false
   const proctoringConsented = Boolean(body.proctoringConsented && proctoringRequired)
 
+  const { data: questions } = await service
+    .from('quiz_questions')
+    .select('id')
+    .eq('module_id', body.moduleId)
+    .order('sort_order')
+
+  const initialAnswers: Record<string, string> = {}
+  if (settings?.question_order === 'random' && questions?.length) {
+    initialAnswers[QUESTION_ORDER_KEY] = encodeQuestionOrder(
+      shuffleQuestionIds(questions.map((q) => q.id)),
+    )
+  }
+
   const { data: attempt, error } = await service.from('quiz_attempts').insert({
     user_id: user.id,
     module_id: body.moduleId,
     score: 0,
     passed: false,
-    answers: {},
+    answers: initialAnswers,
     attempt_number: attemptNumber,
     started_at: now.toISOString(),
     expires_at: expiresAt,
@@ -60,5 +79,6 @@ export async function POST(request: Request) {
   }).select('*').single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  await touchLastActive(supabase, user.id)
   return NextResponse.json({ attempt, timeLimitSeconds: timeLimit ?? null })
 }

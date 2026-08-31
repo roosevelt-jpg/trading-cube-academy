@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getSupabaseEnv } from '@/lib/supabase/env'
 import { recordActivity, syncCourseProgress } from '@/lib/progress/sync-course-progress'
+import { touchLastActive } from '@/lib/auth/touch-last-active'
 
 export async function POST(request: Request) {
   if (!getSupabaseEnv().configured) {
@@ -59,6 +60,8 @@ export async function POST(request: Request) {
   })
 
   const progress_pct = await syncCourseProgress(service, user.id, mod.course_id)
+
+  await touchLastActive(supabase, user.id)
 
   return NextResponse.json({ ok: true, progress_pct })
 }

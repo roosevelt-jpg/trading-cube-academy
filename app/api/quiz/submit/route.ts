@@ -7,6 +7,8 @@ import {
   recordActivity,
   syncCourseProgress,
 } from '@/lib/progress/sync-course-progress'
+import { touchLastActive } from '@/lib/auth/touch-last-active'
+import { stripQuizMeta, QUESTION_ORDER_KEY } from '@/lib/quiz/order'
 
 export async function POST(request: Request) {
   if (!getSupabaseEnv().configured) {
@@ -42,6 +44,11 @@ export async function POST(request: Request) {
   const now = new Date()
   const expired = attempt.expires_at && new Date(attempt.expires_at).getTime() < now.getTime()
   const timedOut = body.timedOut || expired
+  const gradedAnswers = stripQuizMeta(body.answers)
+  const priorAnswers = (attempt.answers ?? {}) as Record<string, string>
+  const storedAnswers = priorAnswers[QUESTION_ORDER_KEY]
+    ? { ...gradedAnswers, [QUESTION_ORDER_KEY]: priorAnswers[QUESTION_ORDER_KEY] }
+    : gradedAnswers
 
   const { data: mod } = await service
     .from('modules')
@@ -71,7 +78,7 @@ export async function POST(request: Request) {
 
   let correct = 0
   const review = (questions ?? []).map((q) => {
-    const selected = body.answers[q.id] ?? null
+    const selected = gradedAnswers[q.id] ?? null
     const qOpts = optByQ[q.id] ?? []
     const right = qOpts.find((o) => o.is_correct)
     const selectedOpt = qOpts.find((o) => o.id === selected)
@@ -106,7 +113,7 @@ export async function POST(request: Request) {
     .update({
       score,
       passed,
-      answers: body.answers,
+      answers: storedAnswers,
       completed_at: now.toISOString(),
       timed_out: timedOut,
       status: timedOut ? 'timed_out' : 'completed',
@@ -167,6 +174,8 @@ export async function POST(request: Request) {
     .neq('status', 'in_progress')
 
   const attemptsRemaining = Math.max(0, attemptsAllowed - (attemptsUsed ?? 0))
+
+  await touchLastActive(supabase, user.id)
 
   return NextResponse.json({
     attempt: updated,

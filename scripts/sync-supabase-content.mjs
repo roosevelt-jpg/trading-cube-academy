@@ -26,8 +26,8 @@ if (!url || !key) {
 const supabase = createClient(url, key)
 
 const DEFAULT_IMAGES = {
-  hero: 'https://images.unsplash.com/photo-1611974789855-9c2a00d0712a?w=1400&q=80&auto=format&fit=crop',
-  heroTerminal: 'https://images.unsplash.com/photo-1642790106117-e829e014aba0?w=900&q=80&auto=format&fit=crop',
+  hero: '/images/hero-trading.svg',
+  heroTerminal: '/images/hero-trading.svg',
   ctaBand: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1400&q=80&auto=format&fit=crop',
   authBackground: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1400&q=80&auto=format&fit=crop',
   pillars: {

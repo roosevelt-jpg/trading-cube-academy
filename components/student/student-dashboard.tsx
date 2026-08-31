@@ -99,7 +99,13 @@ export function StudentDashboard({ profile, initialData }: { profile: Profile; i
   )
 }
 
-export function StudentCoursesList({ profile }: { profile: Profile }) {
+export function StudentCoursesList({
+  profile,
+  initialCourses,
+}: {
+  profile: Profile
+  initialCourses?: (Course & { progress_pct: number })[]
+}) {
   const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
     const [{ data: enrollments }, { data: courses }] = await Promise.all([
       client.from('enrollments').select('*').eq('user_id', profile.id),
@@ -109,7 +115,7 @@ export function StudentCoursesList({ profile }: { profile: Profile }) {
     return ((courses ?? []) as Course[]).filter((c) => prog[c.id] !== undefined).map((c) => ({ ...c, progress_pct: prog[c.id] ?? 0 }))
   }, [profile.id])
 
-  const { data, loading, error } = useRealtimeQuery('courses', fetcher, [profile.id])
+  const { data, loading, error } = useRealtimeQuery('courses', fetcher, [profile.id], initialCourses)
   if (loading && !data) return <LoadingState error={error} />
   if (!data) return <LoadingState error={error ?? 'Unable to load courses.'} />
 

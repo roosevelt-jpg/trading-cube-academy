@@ -37,3 +37,9 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   if (role === 'admin') redirect('/admin')
   redirect('/student')
 }
+
+export async function signOutAction() {
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+  redirect('/login')
+}

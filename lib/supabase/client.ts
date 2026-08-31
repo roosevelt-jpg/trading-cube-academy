@@ -2,28 +2,36 @@ import { createBrowserClient } from '@supabase/ssr'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getSupabaseEnv } from '@/lib/supabase/env'
 
-let browserClient: SupabaseClient | undefined
-
 function createUnavailableClient() {
-  const notConfigured = { message: 'Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local.' }
-  const query: any = {
+  const notConfigured = { message: 'Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY to .env.local.' }
+  const resolved = { data: [] as unknown[], error: null as null }
+
+  const query: Record<string, unknown> = {
     select: () => query,
     eq: () => query,
+    neq: () => query,
     order: () => query,
+    limit: () => query,
+    in: () => query,
     insert: () => query,
+    update: () => query,
+    upsert: () => query,
+    delete: () => query,
     maybeSingle: async () => ({ data: null, error: null }),
     single: async () => ({ data: null, error: notConfigured }),
     then: (resolve: (value: unknown) => void, reject?: (reason: unknown) => void) =>
-      Promise.resolve({ data: null, error: null }).then(resolve, reject),
+      Promise.resolve(resolved).then(resolve, reject),
   }
-  const channel: any = {
+
+  const channel = {
     on: () => channel,
-    subscribe: () => 'SUBSCRIBED',
+    subscribe: () => 'SUBSCRIBED' as const,
   }
 
   return {
     from: () => query,
     auth: {
+      getSession: async () => ({ data: { session: null }, error: null }),
       getUser: async () => ({ data: { user: null }, error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
       signInWithPassword: async () => ({ data: { user: null, session: null }, error: notConfigured }),
@@ -41,8 +49,5 @@ export function createClient() {
   if (!configured || !url || !key) {
     return createUnavailableClient()
   }
-  if (!browserClient) {
-    browserClient = createBrowserClient(url, key)
-  }
-  return browserClient
+  return createBrowserClient(url, key)
 }

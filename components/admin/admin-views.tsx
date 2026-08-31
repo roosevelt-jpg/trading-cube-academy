@@ -10,7 +10,9 @@ import type { ActivityEvent, Course, PageContent, Profile, SiteSettings, Support
 import { formatRelativeDate, tierLabel } from '@/lib/utils/site'
 import { formatDateTime } from '@/lib/utils/datetime'
 
-export function AdminDashboardView() {
+import type { AdminDashboardData } from '@/lib/data/server-dashboard'
+
+export function AdminDashboardView({ initialData }: { initialData?: AdminDashboardData }) {
   const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
     const [{ data: courses }, { data: students }, { data: tickets }, { data: activity }] = await Promise.all([
       client.from('courses').select('*').order('sort_order'),
@@ -26,8 +28,9 @@ export function AdminDashboardView() {
     }
   }, [])
 
-  const { data, loading } = useRealtimeQuery('activity_events', fetcher, [])
-  if (loading) return <LoadingState />
+  const { data, loading, error } = useRealtimeQuery('activity_events', fetcher, [], initialData)
+  if (loading && !data) return <LoadingState error={error} />
+  if (!data) return <LoadingState error={error ?? 'Unable to load admin dashboard.'} />
 
   return (
     <div className="content-pad">
@@ -53,13 +56,14 @@ export function AdminDashboardView() {
   )
 }
 
-export function AdminCoursesView() {
+export function AdminCoursesView({ initialCourses }: { initialCourses?: Course[] }) {
   const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
     const { data } = await client.from('courses').select('*').order('sort_order')
     return (data ?? []) as Course[]
   }, [])
-  const { data, loading } = useRealtimeQuery('courses', fetcher, [])
-  if (loading) return <LoadingState />
+  const { data, loading, error } = useRealtimeQuery('courses', fetcher, [], initialCourses)
+  if (loading && !data) return <LoadingState error={error} />
+  if (!data) return <LoadingState error={error ?? 'Unable to load courses.'} />
 
   return (
     <div className="content-pad">
@@ -587,15 +591,16 @@ export function AdminPageEditor({ slug }: { slug: string }) {
   )
 }
 
-export function AdminSettingsView() {
+export function AdminSettingsView({ initialSettings }: { initialSettings?: SiteSettings }) {
   const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
     const { data } = await client.from('site_settings').select('key,value')
     return Object.fromEntries((data ?? []).map((r: { key: string; value: unknown }) => [r.key, r.value])) as SiteSettings
   }, [])
-  const { data: settings, loading, reload } = useRealtimeQuery('site_settings', fetcher, [])
+  const { data: settings, loading, error, reload } = useRealtimeQuery('site_settings', fetcher, [], initialSettings)
   const [draft, setDraft] = useState<Record<string, unknown>>({})
 
-  if (loading) return <LoadingState />
+  if (loading && !settings) return <LoadingState error={error} />
+  if (!settings) return <LoadingState error={error ?? 'Unable to load settings.'} />
 
   const hp = { ...settings?.homepage, ...(draft.homepage as object) }
   const branding = { ...settings?.branding, ...(draft.branding as object) }

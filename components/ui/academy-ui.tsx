@@ -139,7 +139,15 @@ export function ConfigRequired() {
   )
 }
 
-export function LoadingState({ label = 'Loading…' }: { label?: string }) {
+export function LoadingState({ label = 'Loading…', error }: { label?: string; error?: string | null }) {
+  if (error) {
+    return (
+      <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 px-6 text-center">
+        <p className="text-sm text-red-400">{error}</p>
+        <p className="mono text-xs text-muted">Try refreshing the page. If this persists, sign out and sign in again.</p>
+      </div>
+    )
+  }
   return (
     <div className="flex min-h-[40vh] items-center justify-center">
       <p className="mono text-sm text-muted">{label}</p>

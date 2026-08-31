@@ -47,12 +47,14 @@ async function fetchStudentDashboard(client: ReturnType<typeof createClient>, us
   }
 }
 
-export function StudentDashboard({ profile }: { profile: Profile }) {
-  const fetcher = useMemo(() => (client: ReturnType<typeof createClient>) => fetchStudentDashboard(client, profile.id), [profile.id])
-  const { data, loading } = useRealtimeQuery('enrollments', fetcher, [profile.id])
+import type { StudentDashboardData } from '@/lib/data/server-dashboard'
 
-  if (loading) return <LoadingState />
-  if (!data) return null
+export function StudentDashboard({ profile, initialData }: { profile: Profile; initialData?: StudentDashboardData }) {
+  const fetcher = useMemo(() => (client: ReturnType<typeof createClient>) => fetchStudentDashboard(client, profile.id), [profile.id])
+  const { data, loading, error } = useRealtimeQuery('enrollments', fetcher, [profile.id], initialData)
+
+  if (loading && !data) return <LoadingState error={error} />
+  if (!data) return <LoadingState error={error ?? 'Unable to load dashboard.'} />
 
   return (
     <div className="content-pad">
@@ -107,8 +109,9 @@ export function StudentCoursesList({ profile }: { profile: Profile }) {
     return ((courses ?? []) as Course[]).filter((c) => prog[c.id] !== undefined).map((c) => ({ ...c, progress_pct: prog[c.id] ?? 0 }))
   }, [profile.id])
 
-  const { data, loading } = useRealtimeQuery('courses', fetcher, [profile.id])
-  if (loading) return <LoadingState />
+  const { data, loading, error } = useRealtimeQuery('courses', fetcher, [profile.id])
+  if (loading && !data) return <LoadingState error={error} />
+  if (!data) return <LoadingState error={error ?? 'Unable to load courses.'} />
 
   return (
     <div className="content-pad">

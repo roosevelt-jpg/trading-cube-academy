@@ -9,6 +9,12 @@ import { Btn, Candles, Eyebrow, HelpBlock, LoadingState, Logo, Panel, Pill, Prog
 import { formatDateTime } from '@/lib/utils/datetime'
 import type { Course, Lesson, Module, ModuleProgress, Profile, QuizAttempt, SiteSettings } from '@/lib/types/database'
 
+type ProgressRow = { module_id?: string; module_key?: string; lesson_id?: string; completed?: boolean; progress_pct?: number }
+
+function moduleProgressFor(progress: ProgressRow[], mod: Module) {
+  return progress.find((p) => p.module_id === mod.id || p.module_key === mod.slug)
+}
+
 export function StudentCourseView({ profile, courseSlug }: { profile: Profile; courseSlug: string }) {
   const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
     const { data: course } = await client.from('courses').select('*').eq('slug', courseSlug).maybeSingle()
@@ -18,20 +24,21 @@ export function StudentCourseView({ profile, courseSlug }: { profile: Profile; c
       client.from('enrollments').select('*').eq('user_id', profile.id).eq('course_id', course.id).maybeSingle(),
       client.from('module_progress').select('*').eq('user_id', profile.id),
     ])
-    const progressMap = Object.fromEntries(((modProgress ?? []) as ModuleProgress[]).map((p) => [p.module_id, p]))
-    return { course: course as Course, modules: (modules ?? []) as Module[], enrollment, progressMap }
+    const progressMap = Object.fromEntries(((modProgress ?? []) as ProgressRow[]).map((p) => [p.module_id ?? p.module_key ?? '', p]))
+    return { course: course as Course, modules: (modules ?? []) as Module[], enrollment, progressMap, progressRows: (modProgress ?? []) as ProgressRow[] }
   }, [courseSlug, profile.id])
 
-  const { data, loading } = useRealtimeQuery('modules', fetcher, [courseSlug, profile.id])
-  if (loading) return <LoadingState />
-  if (!data) return <div className="content-pad"><p>Course not found.</p></div>
+  const { data, loading, error } = useRealtimeQuery('modules', fetcher, [courseSlug, profile.id])
+  if (loading && !data) return <LoadingState error={error} />
+  if (!data) return <LoadingState error={error ?? 'Course not found.'} />
 
   const { course, modules, enrollment, progressMap } = data
 
   const isLocked = (mod: Module, index: number) => {
     if (index === 0) return false
     const prev = modules[index - 1]
-    return !progressMap[prev.id]?.completed
+    const prevProg = progressMap[prev.id] ?? progressMap[prev.slug]
+    return !prevProg?.completed
   }
 
   return (
@@ -48,7 +55,7 @@ export function StudentCourseView({ profile, courseSlug }: { profile: Profile; c
 
       <div className="mt-8 space-y-3.5">
         {modules.map((mod, index) => {
-          const prog = progressMap[mod.id]
+          const prog = progressMap[mod.id] ?? progressMap[mod.slug]
           const locked = isLocked(mod, index)
           const active = !locked && !prog?.completed
           return (

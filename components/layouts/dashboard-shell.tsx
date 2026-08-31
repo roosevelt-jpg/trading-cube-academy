@@ -1,14 +1,14 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { Avatar, Btn, Logo } from '@/components/ui/academy-ui'
+import { usePathname } from 'next/navigation'
+import { Logo } from '@/components/ui/academy-ui'
 import { LiveClock } from '@/components/ui/live-clock'
+import { ProfileMenu } from '@/components/ui/profile-menu'
 import type { Profile, SiteSettings } from '@/lib/types/database'
 import { cn } from '@/lib/utils'
 
-const links = [
+const studentLinks = [
   { href: '/student', label: '◆ Dashboard', exact: true },
   { href: '/student/courses', label: '▤ My Courses' },
   { href: '/student/profile', label: '● Profile' },
@@ -25,40 +25,30 @@ export function StudentShell({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
-  const router = useRouter()
-
-  const signOut = async () => {
-    const client = createClient()
-    await client.auth.signOut()
-    router.push('/')
-  }
 
   return (
     <div className="app-shell">
       <aside className="sidebar">
         <div className="sb-brand"><Logo settings={settings} /></div>
         <nav>
-          {links.map((link) => {
+          {studentLinks.map((link) => {
             const on = link.exact ? pathname === link.href : pathname.startsWith(link.href)
             return (
               <Link key={link.href} href={link.href} className={cn('sb-link', on && 'on')}>{link.label}</Link>
             )
           })}
         </nav>
-        <div className="mt-auto px-6 pt-8">
-          <button type="button" className="btn btn-ghost btn-sm w-full" onClick={signOut}>Sign out</button>
-        </div>
       </aside>
       <div className="min-w-0">
         <div className="topbar">
-          <div className="flex items-center gap-3">
-            <Avatar initials={profile.avatar_initials ?? 'ST'} />
-            <div>
-              <p className="mono muted text-[11px]">WELCOME BACK</p>
-              <p className="h2 text-xl">{profile.full_name}</p>
-            </div>
+          <div>
+            <p className="mono muted text-[11px]">WELCOME BACK</p>
+            <p className="h2 text-lg">{profile.full_name}</p>
           </div>
-          <LiveClock className="mono muted text-xs" />
+          <div className="flex items-center gap-4">
+            <LiveClock className="mono muted hidden text-xs md:block" />
+            <ProfileMenu profile={profile} settingsHref="/student/profile" />
+          </div>
         </div>
         {children}
       </div>
@@ -76,7 +66,6 @@ export function AdminShell({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
-  const router = useRouter()
   const links = [
     { href: '/admin', label: '◆ Dashboard', exact: true },
     { href: '/admin/pages', label: '◈ Pages' },
@@ -86,11 +75,6 @@ export function AdminShell({
     { href: '/admin/integrations', label: '⎈ Integrations' },
     { href: '/admin/settings', label: '⚙ Settings' },
   ]
-
-  const signOut = async () => {
-    await createClient().auth.signOut()
-    router.push('/')
-  }
 
   return (
     <div className="app-shell">
@@ -103,14 +87,14 @@ export function AdminShell({
             return <Link key={link.href} href={link.href} className={cn('sb-link', on && 'on')}>{link.label}</Link>
           })}
         </nav>
-        <div className="px-6 pt-8">
-          <Btn variant="ghost" size="sm" onClick={signOut} className="w-full">Sign out</Btn>
-        </div>
       </aside>
       <div className="min-w-0">
         <div className="topbar">
-          <p className="mono muted text-xs">Signed in as {profile.email}</p>
-          <LiveClock className="mono muted text-xs" />
+          <p className="mono muted text-xs">Admin control center</p>
+          <div className="flex items-center gap-4">
+            <LiveClock className="mono muted hidden text-xs md:block" />
+            <ProfileMenu profile={profile} settingsHref="/admin/settings" />
+          </div>
         </div>
         {children}
       </div>

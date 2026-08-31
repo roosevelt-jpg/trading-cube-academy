@@ -25,6 +25,14 @@ A deployment-ready CMS/LMS for structured trading education. All marketing copy,
 - Module quizzes with **server-synced timer**, pass/fail, and attempt limits
 - **Proctored exams** — webcam + microphone recording during quizzes for admin anti-cheat review
 - Certificates, profile, and support tickets
+- **Stripe purchase** for academy or individual courses (when configured)
+
+### Enrollment flow
+1. **Invite-only (default):** Contact form → Admin → Access Requests → Approve (sends invite, enrolls courses, welcome email)
+2. **Manual invite:** Admin → Students → Invite with course selection
+3. **Student detail:** Add/remove course enrollments anytime
+4. **Open signup:** Settings → Open enrollment; auto-enrolls on first login (all live courses by default)
+5. **Paid:** Configure Stripe in Integrations + academy price in Settings (or per-course price on course edit)
 
 ### Admin dashboard
 - Platform overview and activity feed
@@ -32,8 +40,10 @@ A deployment-ready CMS/LMS for structured trading education. All marketing copy,
 - **Site pages** — about, courses, method, FAQ, privacy, terms, contact (all with default content)
 - Course management (modules, content editor, YouTube video manager, quiz builder with timer & proctoring)
 - **Integrations** — Stripe, YouTube Data API, Vercel Blob, email, WhatsApp, OpenAI
-- Student list and detail with progress
-- Support inbox
+- Student list and detail with progress, **course enrollment management**, and invite-with-enroll
+- **Access requests inbox** — approve contact form submissions (invite + auto-enroll + welcome email)
+- Support inbox with **email/WhatsApp notifications** on reply
+- **Stripe checkout** — academy-wide or per-course enrollment via webhook
 - CMS pages, branding, and image settings
 - Live date/time clock in the dashboard header
 

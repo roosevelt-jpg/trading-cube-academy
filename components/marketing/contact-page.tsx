@@ -1,28 +1,22 @@
 'use client'
 
-import { FormEvent, useMemo, useState } from 'react'
+import { FormEvent, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { useRealtimeQuery } from '@/lib/hooks/use-realtime-query'
-import { Btn, ConfigRequired, Eyebrow, LoadingState, Logo, Panel } from '@/components/ui/academy-ui'
+import { getSupabaseEnv } from '@/lib/supabase/env'
+import { Btn, ConfigRequired, Eyebrow, Logo, Panel } from '@/components/ui/academy-ui'
 import type { PageContent, SiteSettings } from '@/lib/types/database'
 import { whatsappUrl } from '@/lib/utils/site'
 
-export function ContactPage() {
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
-    const [settingsRes, pageRes] = await Promise.all([
-      client.from('site_settings').select('key,value'),
-      client.from('page_contents').select('*').eq('slug', 'contact').maybeSingle(),
-    ])
-    const settings = Object.fromEntries((settingsRes.data ?? []).map((r: { key: string; value: unknown }) => [r.key, r.value]))
-    return { settings: settings as SiteSettings, page: pageRes.data as PageContent | null }
-  }, [])
-
-  const { data, loading } = useRealtimeQuery('page_contents', fetcher, [])
+export function ContactPageView({ settings, page }: { settings: SiteSettings | null; page?: PageContent | null }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [message, setMessage] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'done' | 'error'>('idle')
+
+  if (!settings || !getSupabaseEnv().configured) return <ConfigRequired />
+
+  const supportEmail = settings.support?.email ?? settings.footer?.email ?? 'support@thetradingcube.com'
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -31,12 +25,6 @@ export function ContactPage() {
     const { error } = await client.from('access_requests').insert({ full_name: name.trim(), email: email.trim().toLowerCase(), message: message.trim() })
     setStatus(error ? 'error' : 'done')
   }
-
-  if (loading) return <LoadingState />
-  if (!data) return <ConfigRequired />
-
-  const { settings, page } = data
-  const supportEmail = settings.support?.email ?? settings.footer?.email ?? 'support@thetradingcube.com'
 
   return (
     <main className="min-h-screen bg-background">

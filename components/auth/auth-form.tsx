@@ -1,26 +1,27 @@
 'use client'
 
-import { FormEvent, useMemo, useState } from 'react'
+import { FormEvent, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { useRealtimeQuery } from '@/lib/hooks/use-realtime-query'
-import { Btn, ConfigRequired, Eyebrow, LoadingState, Logo, Panel } from '@/components/ui/academy-ui'
+import { getSupabaseEnv } from '@/lib/supabase/env'
+import { Btn, ConfigRequired, Eyebrow, Logo, Panel } from '@/components/ui/academy-ui'
 import type { SiteSettings } from '@/lib/types/database'
 
-export function AuthForm({ mode }: { mode: 'login' | 'signup' | 'forgot' }) {
+export function AuthForm({ mode, settings }: { mode: 'login' | 'signup' | 'forgot'; settings?: SiteSettings | null }) {
   const router = useRouter()
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
-    const { data } = await client.from('site_settings').select('key,value')
-    return Object.fromEntries((data ?? []).map((r: { key: string; value: unknown }) => [r.key, r.value])) as SiteSettings
-  }, [])
-  const { data: settings, loading } = useRealtimeQuery('site_settings', fetcher, [])
+  const searchParams = useSearchParams()
+  const configured = getSupabaseEnv().configured
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+
+  if (!configured || searchParams.get('error') === 'supabase') {
+    return <ConfigRequired />
+  }
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -57,16 +58,13 @@ export function AuthForm({ mode }: { mode: 'login' | 'signup' | 'forgot' }) {
     router.push(profile?.role === 'admin' ? '/admin' : '/student')
   }
 
-  if (loading) return <LoadingState />
-  if (!settings) return <ConfigRequired />
-
   const titles = { login: 'Welcome back.', signup: 'Create your account.', forgot: 'Reset your password.' }
   const subs = { login: 'Sign in to continue your learning path.', signup: 'Open access to the Trading Cube Academy.', forgot: 'We will email you a reset link.' }
 
   return (
     <main className="auth-wrap bg-grid">
       <Panel className="auth-card">
-        <div className="mb-8 flex justify-center"><Logo settings={settings} /></div>
+        <div className="mb-8 flex justify-center"><Logo settings={settings ?? undefined} /></div>
         <Eyebrow className="mb-3">{mode === 'login' ? 'Members only' : mode === 'signup' ? 'Start your path' : 'Account recovery'}</Eyebrow>
         <h1 className="h1 text-3xl">{titles[mode]}</h1>
         <p className="muted mt-2 text-sm">{subs[mode]}</p>

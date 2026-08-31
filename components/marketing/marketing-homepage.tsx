@@ -1,64 +1,61 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { useRealtimeQuery } from '@/lib/hooks/use-realtime-query'
-import { Btn, ConfigRequired, Eyebrow, LoadingState, Logo, Panel } from '@/components/ui/academy-ui'
-import type { Course, FaqItem, MarketingPillar, MarketingStat, MarketingStep, SiteSettings, Testimonial, YoutubeVideo } from '@/lib/types/database'
+import { getSupabaseEnv } from '@/lib/supabase/env'
+import type { MarketingBundle } from '@/lib/data/marketing'
+import { Btn, ConfigRequired, Eyebrow, Logo, Panel } from '@/components/ui/academy-ui'
+import type { SiteSettings } from '@/lib/types/database'
 import { tierLabel, whatsappUrl } from '@/lib/utils/site'
 import { FaqSection } from '@/components/marketing/faq-section'
 
-type MarketingBundle = {
-  settings: Record<string, SiteSettings[keyof SiteSettings]>
-  stats: MarketingStat[]
-  pillars: MarketingPillar[]
-  steps: MarketingStep[]
-  testimonials: Testimonial[]
-  faqs: FaqItem[]
-  courses: Course[]
-  videos: YoutubeVideo[]
-}
+export function MarketingHomepageView({ initialData }: { initialData: MarketingBundle | null }) {
+  const [data, setData] = useState(initialData)
 
-async function fetchMarketing(client: ReturnType<typeof createClient>): Promise<MarketingBundle> {
-  const [settingsRes, stats, pillars, steps, testimonials, faqs, courses, videos] = await Promise.all([
-    client.from('site_settings').select('key,value'),
-    client.from('marketing_stats').select('*').order('sort_order'),
-    client.from('marketing_pillars').select('*').order('sort_order'),
-    client.from('marketing_steps').select('*').order('sort_order'),
-    client.from('testimonials').select('*').order('sort_order'),
-    client.from('faq_items').select('*').order('sort_order'),
-    client.from('courses').select('*').eq('published', true).order('sort_order'),
-    client.from('youtube_videos').select('*').eq('visibility', 'marketing').eq('published', true).order('sort_order'),
-  ])
-  const settings = Object.fromEntries((settingsRes.data ?? []).map((r: { key: string; value: unknown }) => [r.key, r.value]))
-  return {
-    settings: settings as MarketingBundle['settings'],
-    stats: (stats.data ?? []) as MarketingStat[],
-    pillars: (pillars.data ?? []) as MarketingPillar[],
-    steps: (steps.data ?? []) as MarketingStep[],
-    testimonials: (testimonials.data ?? []) as Testimonial[],
-    faqs: (faqs.data ?? []) as FaqItem[],
-    courses: (courses.data ?? []) as Course[],
-    videos: (videos.data ?? []) as YoutubeVideo[],
-  }
-}
+  useEffect(() => {
+    if (!getSupabaseEnv().configured || !initialData) return
+    const client = createClient()
+    const reload = async () => {
+      const [settingsRes, stats, pillars, steps, testimonials, faqs, courses, videos] = await Promise.all([
+        client.from('site_settings').select('key,value'),
+        client.from('marketing_stats').select('*').order('sort_order'),
+        client.from('marketing_pillars').select('*').order('sort_order'),
+        client.from('marketing_steps').select('*').order('sort_order'),
+        client.from('testimonials').select('*').order('sort_order'),
+        client.from('faq_items').select('*').order('sort_order'),
+        client.from('courses').select('*').eq('published', true).order('sort_order'),
+        client.from('youtube_videos').select('*').eq('visibility', 'marketing').eq('published', true).order('sort_order'),
+      ])
+      const settings = Object.fromEntries((settingsRes.data ?? []).map((r: { key: string; value: unknown }) => [r.key, r.value])) as SiteSettings
+      setData({
+        settings,
+        stats: stats.data ?? [],
+        pillars: pillars.data ?? [],
+        steps: steps.data ?? [],
+        testimonials: testimonials.data ?? [],
+        faqs: faqs.data ?? [],
+        courses: courses.data ?? [],
+        videos: videos.data ?? [],
+      })
+    }
+    const tables = ['site_settings', 'marketing_stats', 'marketing_pillars', 'marketing_steps', 'testimonials', 'faq_items', 'courses', 'youtube_videos']
+    const channels = tables.map((table) =>
+      client.channel(`mkt-${table}`).on('postgres_changes', { event: '*', schema: 'public', table }, reload).subscribe()
+    )
+    return () => { channels.forEach((ch) => client.removeChannel(ch)) }
+  }, [initialData])
 
-export function MarketingHomepage() {
-  const fetcher = useMemo(() => fetchMarketing, [])
-  const { data, loading, error } = useRealtimeQuery('site_settings', fetcher, [])
+  if (!data) return <ConfigRequired />
 
-  if (loading) return <LoadingState label="Loading academy…" />
-  if (error || !data) return <ConfigRequired />
-
-  const settings = data.settings as SiteSettings
+  const settings = data.settings
   const home = settings.homepage ?? {}
 
   return (
     <main className="min-h-screen bg-background">
-      <header className="mkt-header">
+      <header className="mkt-header flex-wrap gap-4">
         <Logo settings={settings} />
-        <nav className="mkt-nav hidden md:flex">
+        <nav className="mkt-nav order-3 flex w-full flex-wrap gap-4 md:order-none md:w-auto md:gap-9">
           <a href="#mkt-curriculum">Curriculum</a>
           <a href="#mkt-how">How It Works</a>
           <a href="#mkt-results">Results</a>
@@ -73,8 +70,8 @@ export function MarketingHomepage() {
       <section className="mkt-hero bg-grid">
         <div className="flex-1 max-w-[600px]">
           <Eyebrow className="mb-5">{home.eyebrow}</Eyebrow>
-          <h1 className="h1 text-[46px] leading-[1.12] mb-5">{home.headline}</h1>
-          <p className="muted max-w-[480px] text-base leading-relaxed mb-8">{home.description}</p>
+          <h1 className="h1 mb-5 text-[46px] leading-[1.12]">{home.headline}</h1>
+          <p className="muted mb-8 max-w-[480px] text-base leading-relaxed">{home.description}</p>
           <div className="mb-8 flex flex-wrap gap-3.5">
             <Btn href="/contact">Request Access →</Btn>
             <Btn variant="ghost" href="/login">Member Login</Btn>
@@ -228,12 +225,7 @@ export function MarketingHomepage() {
         </div>
       </footer>
 
-      <a
-        href={whatsappUrl(settings.footer?.whatsapp, 'Hello Trading Cube Academy')}
-        target="_blank"
-        rel="noreferrer"
-        className="fixed bottom-5 right-5 z-50 btn btn-primary btn-sm shadow-lg"
-      >
+      <a href={whatsappUrl(settings.footer?.whatsapp, 'Hello Trading Cube Academy')} target="_blank" rel="noreferrer" className="btn btn-primary btn-sm fixed bottom-5 right-5 z-50 shadow-lg">
         💬 Chat with us
       </a>
     </main>

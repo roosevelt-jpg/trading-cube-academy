@@ -18,17 +18,20 @@ A deployment-ready CMS/LMS for structured trading education. All marketing copy,
 
 ### Student dashboard
 - Dashboard with resume lesson, stats, course progress, activity feed
+- Live date/time clock in the dashboard header
 - Course overview with sequential module unlock
 - Video and reading lessons with progress tracking
-- Module quizzes with pass/fail and attempt logging
+- Module quizzes with **server-synced timer**, pass/fail, and attempt limits
 - Certificates, profile, and support tickets
 
 ### Admin dashboard
 - Platform overview and activity feed
-- Course management (modules, content editor, video IDs, quiz builder)
+- Course management (modules, content editor, video IDs, quiz builder with timer)
+- **Integrations** — Stripe, YouTube Data API, Vercel Blob, email, WhatsApp, OpenAI
 - Student list and detail with progress
 - Support inbox
-- Academy settings (homepage copy, branding)
+- CMS pages, branding, and image settings
+- Live date/time clock in the dashboard header
 
 ## Setup
 
@@ -39,7 +42,16 @@ Create a project at [supabase.com](https://supabase.com), then run:
 ```bash
 # In Supabase SQL Editor, run in order:
 # supabase/migrations/001_schema.sql
+# supabase/migrations/002_cms_images.sql
+# supabase/migrations/003_integrations_quiz_timer.sql   (or supabase/remote-setup.sql if LMS already exists)
 # supabase/seed.sql
+```
+
+Then sync CMS content and integration rows:
+
+```bash
+node scripts/sync-supabase-content.mjs
+node scripts/sync-integrations.mjs
 ```
 
 Or with the Supabase CLI:
@@ -55,10 +67,12 @@ Copy `.env.example` to `.env.local`:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+# Server-only (integrations API, quiz start/submit):
+SUPABASE_SECRET_KEY=your-secret-key
 ```
 
-Optional for material uploads:
+Optional for material uploads (also configurable in Admin → Integrations):
 
 ```env
 BLOB_READ_WRITE_TOKEN=vercel_blob_token

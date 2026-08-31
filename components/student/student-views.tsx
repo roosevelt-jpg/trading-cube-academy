@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useRealtimeQuery } from '@/lib/hooks/use-realtime-query'
 import { useQuizTimer } from '@/lib/hooks/use-quiz-timer'
-import { Btn, Candles, Eyebrow, HelpBlock, LoadingState, Panel, Pill, ProgressTrack } from '@/components/ui/academy-ui'
+import { Btn, Candles, Eyebrow, HelpBlock, LoadingState, Logo, Panel, Pill, ProgressTrack } from '@/components/ui/academy-ui'
 import { formatDateTime } from '@/lib/utils/datetime'
 import type { Course, Lesson, Module, ModuleProgress, Profile, QuizAttempt, SiteSettings } from '@/lib/types/database'
 

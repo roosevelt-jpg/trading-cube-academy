@@ -10,26 +10,26 @@ export const DEFAULT_IMAGES = {
   logo: '/brand/logo-icon.svg',
   hero: '/images/hero-trading.svg',
   heroTerminal: '/images/hero-trading.svg',
-  ctaBand: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1400&q=80&auto=format&fit=crop',
-  authBackground: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1400&q=80&auto=format&fit=crop',
-  certificateWatermark: 'https://images.unsplash.com/photo-1621761191319-c6fb59208040?w=800&q=80&auto=format&fit=crop',
+  ctaBand: '/images/hero-trading.svg',
+  authBackground: '/images/hero-trading.svg',
+  certificateWatermark: '/images/hero-trading.svg',
   pillars: {
-    sequence: 'https://images.unsplash.com/photo-1642790106117-e829e014aba0?w=600&q=80&auto=format&fit=crop',
-    accountability: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&q=80&auto=format&fit=crop',
-    support: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=600&q=80&auto=format&fit=crop',
+    sequence: '/images/card-charts.svg',
+    accountability: '/images/card-terminal.svg',
+    support: '/images/card-risk.svg',
   },
   courses: {
-    'market-structure-basics': 'https://images.unsplash.com/photo-1642790106117-e829e014aba0?w=800&q=80&auto=format&fit=crop',
-    'risk-management-fundamentals': 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=800&q=80&auto=format&fit=crop',
-    'price-action-mastery': 'https://images.unsplash.com/photo-1611974789855-9c2a00d0712a?w=800&q=80&auto=format&fit=crop',
-    'technical-analysis-101': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80&auto=format&fit=crop',
-    'options-trading-blueprint': 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80&auto=format&fit=crop',
-    'trading-psychology-discipline': 'https://images.unsplash.com/photo-1559526324-593bc073d938?w=800&q=80&auto=format&fit=crop',
+    'market-structure-basics': '/images/card-charts.svg',
+    'risk-management-fundamentals': '/images/card-risk.svg',
+    'price-action-mastery': '/images/card-charts.svg',
+    'technical-analysis-101': '/images/card-terminal.svg',
+    'options-trading-blueprint': '/images/card-terminal.svg',
+    'trading-psychology-discipline': '/images/card-risk.svg',
   },
   testimonials: {
-    marcus: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80&auto=format&fit=crop',
-    priya: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80&auto=format&fit=crop',
-    james: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&q=80&auto=format&fit=crop',
+    marcus: '/images/avatar.svg',
+    priya: '/images/avatar.svg',
+    james: '/images/avatar.svg',
   },
 } as const
 
@@ -285,8 +285,10 @@ export function defaultPage(slug: string) {
 }
 
 export function normalizeAssetUrl(url?: string | null, fallback?: string) {
-  if (!url?.trim()) return fallback ?? null
-  if (url.includes('unsplash.com') || url.includes('picsum.photos')) return fallback ?? DEFAULT_IMAGES.hero
+  if (!url?.trim()) return fallback ?? DEFAULT_IMAGES.hero
+  if (url.includes('unsplash.com') || url.includes('picsum.photos') || url.includes('WhatsApp') || url.includes('blob.vercel-storage.com')) {
+    return fallback ?? DEFAULT_IMAGES.hero
+  }
   return url
 }
 
@@ -319,8 +321,16 @@ export function mergeSettings(db: Record<string, unknown> | null | undefined) {
   }
 
   const images = { ...base.images, ...(db.images as object) } as typeof base.images
-  if (typeof images.logo === 'string' && (images.logo.includes('WhatsApp') || images.logo.includes('blob.vercel-storage.com'))) {
+  if (typeof images.logo === 'string' && (images.logo.includes('WhatsApp') || images.logo.includes('blob.vercel-storage.com') || images.logo.includes('unsplash.com'))) {
     images.logo = DEFAULT_IMAGES.logoBanner
+  }
+  if (images.pillars && typeof images.pillars === 'object') {
+    const p = images.pillars as Record<string, string>
+    images.pillars = {
+      sequence: normalizeAssetUrl(p.sequence, DEFAULT_IMAGES.pillars.sequence),
+      accountability: normalizeAssetUrl(p.accountability, DEFAULT_IMAGES.pillars.accountability),
+      support: normalizeAssetUrl(p.support, DEFAULT_IMAGES.pillars.support),
+    }
   }
 
   return {

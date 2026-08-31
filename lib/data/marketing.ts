@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseEnv } from '@/lib/supabase/env'
-import { defaultMarketingBundle, defaultPage, DEFAULT_PAGES, mergeSettings } from '@/lib/defaults/cms-defaults'
+import { defaultMarketingBundle, defaultPage, DEFAULT_PAGES, DEFAULT_IMAGES, mergeSettings } from '@/lib/defaults/cms-defaults'
+import { normalizeAssetUrl, normalizeCourseImageUrl } from '@/lib/utils/assets'
 import type { Course, FaqItem, MarketingPillar, MarketingStat, MarketingStep, PageContent, SiteSettings, Testimonial, YoutubeVideo } from '@/lib/types/database'
 
 export type MarketingBundle = {
@@ -16,12 +17,25 @@ export type MarketingBundle = {
 
 function mergeCourseImages(courses: Course[], defaults: Course[]): Course[] {
   const bySlug = Object.fromEntries(defaults.map((c) => [c.slug, c.image_url]))
-  return courses.map((c) => ({ ...c, image_url: c.image_url ?? bySlug[c.slug] ?? null }))
+  return courses.map((c) => ({
+    ...c,
+    image_url: normalizeCourseImageUrl(c.image_url ?? bySlug[c.slug], c.slug),
+  }))
 }
 
 function mergeTestimonialImages(testimonials: Testimonial[], defaults: Testimonial[]): Testimonial[] {
   const byAuthor = Object.fromEntries(defaults.map((t) => [t.author_name, t.image_url]))
-  return testimonials.map((t, i) => ({ ...t, image_url: t.image_url ?? byAuthor[t.author_name] ?? defaults[i]?.image_url ?? null }))
+  return testimonials.map((t, i) => ({
+    ...t,
+    image_url: normalizeAssetUrl(t.image_url ?? byAuthor[t.author_name] ?? defaults[i]?.image_url, DEFAULT_IMAGES.testimonials.marcus),
+  }))
+}
+
+function normalizePage(page: PageContent): PageContent {
+  return {
+    ...page,
+    hero_image_url: normalizeAssetUrl(page.hero_image_url, DEFAULT_IMAGES.hero),
+  }
 }
 
 export async function fetchMarketingData(): Promise<MarketingBundle> {
@@ -67,13 +81,13 @@ export async function fetchContactPage() {
   const settings = await fetchSiteSettings()
   const { configured } = getSupabaseEnv()
   const fallback = defaultPage('contact')
-  if (!configured) return { settings, page: fallback as PageContent | null }
+  if (!configured) return { settings, page: fallback ? normalizePage(fallback as PageContent) : null }
 
   const supabase = await createClient()
   const { data: page } = await supabase.from('page_contents').select('*').eq('slug', 'contact').maybeSingle()
   return {
     settings,
-    page: (page ?? fallback) as PageContent | null,
+    page: normalizePage((page ?? fallback) as PageContent),
   }
 }
 
@@ -82,13 +96,13 @@ export async function fetchCmsPage(slug: string): Promise<{ settings: SiteSettin
   const fallback = defaultPage(slug)
   const { configured } = getSupabaseEnv()
   if (!configured) {
-    return { settings, page: fallback as PageContent | null }
+    return { settings, page: fallback ? normalizePage(fallback as PageContent) : null }
   }
 
   const supabase = await createClient()
   const { data: page } = await supabase.from('page_contents').select('*').eq('slug', slug).maybeSingle()
-  if (page) return { settings, page: page as PageContent }
-  if (fallback) return { settings, page: fallback as PageContent }
+  if (page) return { settings, page: normalizePage(page as PageContent) }
+  if (fallback) return { settings, page: normalizePage(fallback as PageContent) }
   return { settings, page: null }
 }
 

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-label="Trading charts">
+  <rect width="800" height="500" fill="#0b0b0b"/>
+  <path d="M40 380 120 320 200 340 280 260 360 290 440 200 520 230 600 160 680 190 760 120" fill="none" stroke="#34d399" stroke-width="4" stroke-linecap="round"/>
+  <g fill="#f4b400" opacity="0.9">
+    <rect x="100" y="280" width="28" height="100" rx="3"/><rect x="180" y="240" width="28" height="140" rx="3"/>
+    <rect x="260" y="300" width="28" height="80" rx="3"/><rect x="340" y="200" width="28" height="180" rx="3"/>
+    <rect x="420" y="260" width="28" height="120" rx="3"/><rect x="500" y="180" width="28" height="200" rx="3"/>
+  </g>
+</svg>

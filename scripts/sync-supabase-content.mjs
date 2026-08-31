@@ -28,21 +28,22 @@ const supabase = createClient(url, key)
 const DEFAULT_IMAGES = {
   hero: '/images/hero-trading.svg',
   heroTerminal: '/images/hero-trading.svg',
-  ctaBand: 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1400&q=80&auto=format&fit=crop',
-  authBackground: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1400&q=80&auto=format&fit=crop',
+  ctaBand: '/images/hero-trading.svg',
+  authBackground: '/images/hero-trading.svg',
   pillars: {
-    sequence: 'https://images.unsplash.com/photo-1642790106117-e829e014aba0?w=600&q=80&auto=format&fit=crop',
-    accountability: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&q=80&auto=format&fit=crop',
-    support: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=600&q=80&auto=format&fit=crop',
+    sequence: '/images/card-charts.svg',
+    accountability: '/images/card-terminal.svg',
+    support: '/images/card-risk.svg',
   },
   courses: {
-    'market-structure-basics': 'https://images.unsplash.com/photo-1642790106117-e829e014aba0?w=800&q=80&auto=format&fit=crop',
-    'risk-management-fundamentals': 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=800&q=80&auto=format&fit=crop',
-    'price-action-mastery': 'https://images.unsplash.com/photo-1611974789855-9c2a00d0712a?w=800&q=80&auto=format&fit=crop',
-    'technical-analysis-101': 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80&auto=format&fit=crop',
-    'options-trading-blueprint': 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80&auto=format&fit=crop',
-    'trading-psychology-discipline': 'https://images.unsplash.com/photo-1559526324-593bc073d938?w=800&q=80&auto=format&fit=crop',
+    'market-structure-basics': '/images/card-charts.svg',
+    'risk-management-fundamentals': '/images/card-risk.svg',
+    'price-action-mastery': '/images/card-charts.svg',
+    'technical-analysis-101': '/images/card-terminal.svg',
+    'options-trading-blueprint': '/images/card-terminal.svg',
+    'trading-psychology-discipline': '/images/card-risk.svg',
   },
+  avatar: '/images/avatar.svg',
 }
 
 const PAGE_HERO = {
@@ -114,6 +115,18 @@ async function main() {
     if (error) console.warn(`  ${key}:`, error.message)
     else console.log(`  ✓ ${key}`)
   }
+
+  console.log('Syncing course card images…')
+  for (const [slug, image_url] of Object.entries(DEFAULT_IMAGES.courses)) {
+    const { error } = await supabase.from('courses').update({ image_url }).eq('slug', slug)
+    if (error) console.warn(`  course ${slug}:`, error.message)
+    else console.log(`  ✓ course ${slug}`)
+  }
+
+  console.log('Syncing testimonial avatars…')
+  const { error: testimonialErr } = await supabase.from('testimonials').update({ image_url: DEFAULT_IMAGES.avatar }).neq('id', '00000000-0000-0000-0000-000000000000')
+  if (testimonialErr) console.warn('  testimonials:', testimonialErr.message)
+  else console.log('  ✓ testimonials')
 
   // Check LMS tables
   const { error: coursesErr } = await supabase.from('courses').select('id').limit(1)

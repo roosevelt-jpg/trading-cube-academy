@@ -4,9 +4,12 @@ import { FormEvent, useState } from 'react'
 import Link from 'next/link'
 import { getSupabaseEnv } from '@/lib/supabase/env'
 import { Btn, Eyebrow, Logo, Panel } from '@/components/ui/academy-ui'
+import { MarketingSiteHeader } from '@/components/marketing/marketing-site-header'
 import { WhatsAppFloatButton } from '@/components/ui/whatsapp-float-button'
+import { DEFAULT_IMAGES } from '@/lib/defaults/cms-defaults'
 import type { PageContent, SiteSettings } from '@/lib/types/database'
 import { whatsappUrl } from '@/lib/utils/site'
+import { normalizeAssetUrl } from '@/lib/utils/assets'
 
 export function ContactPageView({ settings, page }: { settings: SiteSettings; page?: PageContent | null }) {
   const [name, setName] = useState('')
@@ -16,7 +19,7 @@ export function ContactPageView({ settings, page }: { settings: SiteSettings; pa
   const configured = getSupabaseEnv().configured
 
   const supportEmail = settings.support?.email ?? settings.footer?.email ?? 'support@thetradingcube.com'
-  const bgImage = page?.hero_image_url ?? settings.homepage?.heroImageUrl
+  const bgImage = normalizeAssetUrl(page?.hero_image_url ?? settings.homepage?.heroImageUrl, DEFAULT_IMAGES.authBackground)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -39,10 +42,7 @@ export function ContactPageView({ settings, page }: { settings: SiteSettings; pa
 
   return (
     <main className="min-h-screen bg-background">
-      <header className="mkt-header">
-        <Logo settings={settings} variant="banner" />
-        <Btn variant="ghost" size="sm" href="/">← Back</Btn>
-      </header>
+      <MarketingSiteHeader settings={settings} />
 
       {bgImage && (
         <div className="relative h-48 w-full overflow-hidden border-b border-[var(--border-soft)]">

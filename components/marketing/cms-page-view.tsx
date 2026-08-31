@@ -2,19 +2,21 @@
 
 import Link from 'next/link'
 import { Btn, Eyebrow, Logo, Panel } from '@/components/ui/academy-ui'
+import { MarketingSiteHeader } from '@/components/marketing/marketing-site-header'
+import { DEFAULT_IMAGES } from '@/lib/defaults/cms-defaults'
 import type { PageContent, SiteSettings } from '@/lib/types/database'
+import { normalizeAssetUrl } from '@/lib/utils/assets'
 
 export function CmsPageView({ page, settings }: { page: PageContent; settings: SiteSettings }) {
+  const heroImage = normalizeAssetUrl(page.hero_image_url, DEFAULT_IMAGES.hero)
+
   return (
     <main className="min-h-screen bg-background">
-      <header className="mkt-header">
-        <Logo settings={settings} variant="banner" />
-        <Btn variant="ghost" size="sm" href="/">← Home</Btn>
-      </header>
+      <MarketingSiteHeader settings={settings} />
 
-      {page.hero_image_url && (
+      {heroImage && (
         <div className="relative h-[280px] w-full overflow-hidden border-b border-[var(--border-soft)] md:h-[360px]">
-          <img src={page.hero_image_url} alt="" className="size-full object-cover opacity-70" />
+          <img src={heroImage} alt="" className="size-full object-cover opacity-70" />
           <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg)] via-transparent to-transparent" />
         </div>
       )}
@@ -48,6 +50,7 @@ export function CmsPageView({ page, settings }: { page: PageContent; settings: S
             <h4>Academy</h4>
             <Link href="/about">About</Link>
             <Link href="/courses">Courses</Link>
+            <Link href="/method">Method</Link>
             <Link href="/contact">Request access</Link>
           </div>
           <div className="mkt-footer-col">

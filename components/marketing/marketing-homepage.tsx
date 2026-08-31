@@ -6,10 +6,12 @@ import { createClient } from '@/lib/supabase/client'
 import { getSupabaseEnv } from '@/lib/supabase/env'
 import type { MarketingBundle } from '@/lib/data/marketing'
 import { defaultMarketingBundle } from '@/lib/defaults/cms-defaults'
-import { mergeSettings, DEFAULT_IMAGES, DEFAULT_HOMEPAGE_SECTIONS, DEFAULT_NAVIGATION } from '@/lib/defaults/cms-defaults'
+import { mergeSettings, DEFAULT_IMAGES, DEFAULT_HOMEPAGE_SECTIONS } from '@/lib/defaults/cms-defaults'
 import { Btn, Eyebrow, Logo, Panel } from '@/components/ui/academy-ui'
+import { MarketingSiteHeader } from '@/components/marketing/marketing-site-header'
 import type { SiteSettings } from '@/lib/types/database'
 import { tierLabel, whatsappUrl } from '@/lib/utils/site'
+import { normalizeAssetUrl, normalizeCourseImageUrl, normalizePillarImages } from '@/lib/utils/assets'
 import { FaqSection } from '@/components/marketing/faq-section'
 import { WhatsAppFloatButton } from '@/components/ui/whatsapp-float-button'
 
@@ -36,9 +38,15 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
         stats: stats.data ?? [],
         pillars: pillars.data ?? [],
         steps: steps.data ?? [],
-        testimonials: testimonials.data ?? [],
+        testimonials: (testimonials.data ?? []).map((t) => ({
+          ...t,
+          image_url: normalizeAssetUrl(t.image_url, '/images/avatar.svg'),
+        })),
         faqs: faqs.data ?? [],
-        courses: courses.data ?? [],
+        courses: (courses.data ?? []).map((c) => ({
+          ...c,
+          image_url: normalizeCourseImageUrl(c.image_url, c.slug),
+        })),
         videos: videos.data ?? [],
       })
     }
@@ -52,34 +60,14 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
   const settings = data.settings
   const home = settings.homepage ?? {}
   const sections = { ...DEFAULT_HOMEPAGE_SECTIONS, ...home.sections }
-  const navigation = home.navigation?.length ? home.navigation : DEFAULT_NAVIGATION
   const ctas = { requestAccess: 'Request Access →', memberLogin: 'Member Login', ...home.ctas }
-  const heroImage = resolveMarketingHeroImage(home.heroImageUrl, settings)
-  const pillarImages = [
-    (settings.images as Record<string, Record<string, string>> | undefined)?.pillars?.sequence,
-    (settings.images as Record<string, Record<string, string>> | undefined)?.pillars?.accountability,
-    (settings.images as Record<string, Record<string, string>> | undefined)?.pillars?.support,
-  ]
+  const heroImage = normalizeAssetUrl(home.heroImageUrl, DEFAULT_IMAGES.hero)
+  const pillarImages = Object.values(normalizePillarImages(settings.images as Record<string, unknown>))
   const waLabel = settings.support?.whatsappLabel ?? 'WhatsApp the desk'
 
   return (
     <main className="min-h-screen bg-background">
-      <header className="mkt-header flex-wrap gap-4">
-        <Logo settings={settings} variant="banner" />
-        <nav className="mkt-nav order-3 flex w-full flex-wrap gap-4 md:order-none md:w-auto md:gap-9">
-          {navigation.map((link) =>
-            link.href.startsWith('#') ? (
-              <a key={link.href} href={link.href}>{link.label}</a>
-            ) : (
-              <Link key={link.href} href={link.href}>{link.label}</Link>
-            ),
-          )}
-        </nav>
-        <div className="flex gap-3">
-          <Btn variant="ghost" size="sm" href="/login">{ctas.memberLogin}</Btn>
-          <Btn variant="primary" size="sm" href="/contact">{ctas.requestAccess?.replace(' →', '') ?? 'Request Access'}</Btn>
-        </div>
-      </header>
+      <MarketingSiteHeader settings={settings} />
 
       <section className="mkt-hero bg-grid">
         <div className="flex-1 max-w-[600px]">
@@ -148,7 +136,7 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
             <Panel key={course.id} className="course-card overflow-hidden p-0">
               {course.image_url && (
                 <div className="h-36 w-full overflow-hidden">
-                  <img src={course.image_url} alt={course.title} className="size-full object-cover transition-transform duration-300 hover:scale-105" />
+                  <img src={normalizeCourseImageUrl(course.image_url, course.slug)} alt={course.title} className="size-full object-cover transition-transform duration-300 hover:scale-105" />
                 </div>
               )}
               <div className="flex flex-col gap-3.5 p-5">
@@ -213,7 +201,7 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
             <Panel key={t.id} className="testimonial-card">
               <p className="text-[14.5px] leading-relaxed">&ldquo;{t.quote}&rdquo;</p>
               <div className="flex items-center gap-3">
-                {t.image_url && <img src={t.image_url} alt={t.author_name} className="size-10 rounded-full border border-[var(--border)] object-cover" />}
+                {t.image_url && <img src={normalizeAssetUrl(t.image_url, '/images/avatar.svg')} alt={t.author_name} className="size-10 rounded-full border border-[var(--border)] object-cover" />}
                 <div>
                   <p className="text-[13.5px] font-semibold">{t.author_name}</p>
                   <p className="mono muted text-[11.5px]">{t.author_meta}</p>
@@ -235,7 +223,7 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
       <section className="cta-band relative overflow-hidden bg-grid">
         {(home.ctaImageUrl as string | undefined) && (
           <>
-            <img src={home.ctaImageUrl as string} alt="" className="absolute inset-0 size-full object-cover opacity-25" aria-hidden />
+            <img src={normalizeAssetUrl(home.ctaImageUrl as string, DEFAULT_IMAGES.ctaBand)} alt="" className="absolute inset-0 size-full object-cover opacity-25" aria-hidden />
             <div className="absolute inset-0 bg-[var(--bg)]/70" aria-hidden />
           </>
         )}
@@ -279,15 +267,4 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
       <WhatsAppFloatButton settings={settings} context="homepage" />
     </main>
   )
-}
-
-function resolveMarketingHeroImage(homeHero?: string, settings?: SiteSettings) {
-  const fromImages =
-    typeof settings?.images === 'object' && settings.images && 'hero' in settings.images
-      ? (settings.images as Record<string, string>).hero
-      : undefined
-  const candidate = homeHero ?? fromImages ?? DEFAULT_IMAGES.hero
-  if (!candidate?.trim()) return DEFAULT_IMAGES.hero
-  if (candidate.includes('unsplash.com') || candidate.includes('picsum.photos')) return DEFAULT_IMAGES.hero
-  return candidate
 }

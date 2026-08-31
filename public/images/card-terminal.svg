@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-label="Trading terminal">
+  <rect width="800" height="500" fill="#0b0b0b"/>
+  <rect x="40" y="40" width="720" height="420" rx="8" fill="#111" stroke="#2a2a2a"/>
+  <path d="M80 360 160 300 240 320 320 240 400 270 480 190 560 220 640 150 720 180" fill="none" stroke="#f4b400" stroke-width="3"/>
+  <text x="80" y="90" fill="#888" font-family="monospace" font-size="18">LIVE TERMINAL</text>
+  <text x="80" y="130" fill="#34d399" font-family="monospace" font-size="28">+2.14%</text>
+</svg>

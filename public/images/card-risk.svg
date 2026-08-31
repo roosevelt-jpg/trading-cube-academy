@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-label="Risk management">
+  <rect width="800" height="500" fill="#0b0b0b"/>
+  <circle cx="400" cy="250" r="120" fill="none" stroke="#f4b400" stroke-width="3" opacity="0.5"/>
+  <circle cx="400" cy="250" r="80" fill="none" stroke="#34d399" stroke-width="2" opacity="0.7"/>
+  <text x="400" y="245" fill="#f4b400" font-family="monospace" font-size="22" text-anchor="middle">RISK</text>
+  <text x="400" y="275" fill="#888" font-family="monospace" font-size="14" text-anchor="middle">1R max</text>
+</svg>

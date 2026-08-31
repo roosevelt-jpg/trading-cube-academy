@@ -94,7 +94,9 @@ After running `seed.sql`:
 | Role    | Email                    | Password           |
 |---------|--------------------------|--------------------|
 | Admin   | admin@thetradingcube.com | TradingCube2026!   |
-| Student | m.harrison@email.com     | TradingCube2026!   |
+| Student | student@thetradingcube.com or m.harrison@email.com | TradingCube2026!   |
+
+If login fails after `seed.sql`, run **`node scripts/seed-auth-users.mjs`** — it resets passwords via the Supabase Admin API (required for hosted projects).
 
 **Change these passwords before production deployment.**
 

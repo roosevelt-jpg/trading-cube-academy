@@ -1,9 +1,10 @@
 -- Trading Cube Academy — production seed (mockup-aligned)
 -- Run after 001_schema.sql. Default passwords: TradingCube2026! (change in production)
 
--- Fixed IDs for stable references
+-- Fixed IDs for fresh local installs (hosted Supabase may use different UUIDs from Admin API).
 -- Admin:  a0000000-0000-4000-8000-000000000001
 -- Student: a0000000-0000-4000-8000-000000000002
+-- Run `node scripts/seed-auth-users.mjs` on hosted projects before seeding student progress rows.
 
 insert into auth.users (
   instance_id, id, aud, role, email, encrypted_password,
@@ -27,7 +28,7 @@ insert into auth.users (
   '00000000-0000-0000-0000-000000000000',
   'a0000000-0000-4000-8000-000000000002',
   'authenticated', 'authenticated',
-  'm.harrison@email.com',
+  'student@thetradingcube.com',
   crypt('TradingCube2026!', gen_salt('bf')),
   now(), now(), now(),
   '{"provider":"email","providers":["email"]}'::jsonb,
@@ -51,7 +52,7 @@ values
 (
   'a0000000-0000-4000-8000-000000000002',
   'a0000000-0000-4000-8000-000000000002',
-  '{"sub":"a0000000-0000-4000-8000-000000000002","email":"m.harrison@email.com"}'::jsonb,
+  '{"sub":"a0000000-0000-4000-8000-000000000002","email":"student@thetradingcube.com"}'::jsonb,
   'email',
   'a0000000-0000-4000-8000-000000000002',
   now(), now(), now()
@@ -61,7 +62,7 @@ on conflict (id) do nothing;
 insert into public.profiles (id, email, full_name, role, status, avatar_initials, last_active_at)
 values
   ('a0000000-0000-4000-8000-000000000001', 'admin@thetradingcube.com', 'Academy Admin', 'admin', 'active', 'AA', now()),
-  ('a0000000-0000-4000-8000-000000000002', 'm.harrison@email.com', 'Marcus Harrison', 'student', 'active', 'MH', now())
+  ('a0000000-0000-4000-8000-000000000002', 'student@thetradingcube.com', 'Marcus Harrison', 'student', 'active', 'MH', now())
 on conflict (id) do update set
   email = excluded.email,
   full_name = excluded.full_name,
@@ -250,28 +251,66 @@ insert into public.youtube_videos (id, title, description, video_id, course_name
 ('v0000001-0000-4000-8000-000000000007', 'Options Spreads Explained', 'Advanced preview', 'dQw4w9WgXcQ', 'Options Trading Blueprint', '8:15', 'marketing', true, 6),
 ('v0000001-0000-4000-8000-000000000008', 'The Revenge Trade Trap', 'Psychology preview', 'dQw4w9WgXcQ', 'Trading Psychology', '5:47', 'marketing', true, 7);
 
--- Student enrollments & progress (Marcus)
-insert into public.enrollments (user_id, course_id, progress_pct) values
-('a0000000-0000-4000-8000-000000000002', 'c0010000-0000-4000-8000-000000000001', 100),
-('a0000000-0000-4000-8000-000000000002', 'c0010000-0000-4000-8000-000000000002', 100),
-('a0000000-0000-4000-8000-000000000002', 'c0010000-0000-4000-8000-000000000003', 68),
-('a0000000-0000-4000-8000-000000000002', 'c0010000-0000-4000-8000-000000000004', 32);
+-- Student enrollments & progress (resolves live student profile — works when auth UUIDs differ from seed)
+insert into public.enrollments (user_id, course_id, progress_pct)
+select s.id, v.course_id, v.progress_pct
+from (select id from public.profiles where role = 'student' order by created_at limit 1) s
+cross join (values
+  ('c0010000-0000-4000-8000-000000000001'::uuid, 100),
+  ('c0010000-0000-4000-8000-000000000002'::uuid, 100),
+  ('c0010000-0000-4000-8000-000000000003'::uuid, 68),
+  ('c0010000-0000-4000-8000-000000000004'::uuid, 32)
+) as v(course_id, progress_pct)
+where s.id is not null
+on conflict (user_id, course_id) do update set progress_pct = excluded.progress_pct;
 
-insert into public.module_progress (user_id, module_id, completed, progress_pct) values
-('a0000000-0000-4000-8000-000000000002', 'm0030001-0000-4000-8000-000000000001', true, 100),
-('a0000000-0000-4000-8000-000000000002', 'm0030001-0000-4000-8000-000000000002', true, 100),
-('a0000000-0000-4000-8000-000000000002', 'm0030001-0000-4000-8000-000000000003', false, 67);
+insert into public.module_progress (user_id, module_id, completed, progress_pct)
+select s.id, v.module_id, v.completed, v.progress_pct
+from (select id from public.profiles where role = 'student' order by created_at limit 1) s
+cross join (values
+  ('m0030001-0000-4000-8000-000000000001'::uuid, true, 100),
+  ('m0030001-0000-4000-8000-000000000002'::uuid, true, 100),
+  ('m0030001-0000-4000-8000-000000000003'::uuid, false, 67)
+) as v(module_id, completed, progress_pct)
+where s.id is not null
+on conflict (user_id, module_id) do update set
+  completed = excluded.completed,
+  progress_pct = excluded.progress_pct;
 
-insert into public.lesson_progress (user_id, lesson_id, completed, progress_pct) values
-('a0000000-0000-4000-8000-000000000002', 'l0030001-0000-4000-8000-000000000001', true, 100),
-('a0000000-0000-4000-8000-000000000002', 'l0030001-0000-4000-8000-000000000002', true, 100),
-('a0000000-0000-4000-8000-000000000002', 'l0030001-0000-4000-8000-000000000003', true, 100),
-('a0000000-0000-4000-8000-000000000002', 'l0030001-0000-4000-8000-000000000004', false, 57);
+insert into public.lesson_progress (user_id, lesson_id, completed, progress_pct)
+select s.id, v.lesson_id, v.completed, v.progress_pct
+from (select id from public.profiles where role = 'student' order by created_at limit 1) s
+cross join (values
+  ('l0030001-0000-4000-8000-000000000001'::uuid, true, 100),
+  ('l0030001-0000-4000-8000-000000000002'::uuid, true, 100),
+  ('l0030001-0000-4000-8000-000000000003'::uuid, true, 100),
+  ('l0030001-0000-4000-8000-000000000004'::uuid, false, 57)
+) as v(lesson_id, completed, progress_pct)
+where s.id is not null
+on conflict (user_id, lesson_id) do update set
+  completed = excluded.completed,
+  progress_pct = excluded.progress_pct;
 
 -- Activity feed
+insert into public.activity_events (event_type, title, meta)
+select
+  v.event_type,
+  v.title,
+  case v.event_type
+    when 'enrollment' then jsonb_build_object('user_id', s.id)
+    when 'lesson_complete' then jsonb_build_object(
+      'user_id', s.id,
+      'lesson_id', 'l0030001-0000-4000-8000-000000000003'::uuid
+    )
+  end
+from (select id from public.profiles where role = 'student' order by created_at limit 1) s
+cross join (values
+  ('enrollment'::text, 'Marcus Harrison enrolled in Price Action Mastery'),
+  ('lesson_complete'::text, 'Marcus Harrison completed Module 3 · Lesson 3')
+) as v(event_type, title)
+where s.id is not null;
+
 insert into public.activity_events (event_type, title, meta) values
-('enrollment', 'Marcus Harrison enrolled in Price Action Mastery', '{"user_id":"a0000000-0000-4000-8000-000000000002"}'::jsonb),
-('lesson_complete', 'Marcus Harrison completed Module 3 · Lesson 3', '{"user_id":"a0000000-0000-4000-8000-000000000002","lesson_id":"l0030001-0000-4000-8000-000000000003"}'::jsonb),
 ('course_complete', 'Priya N. completed Risk Management Fundamentals', '{"score":96}'::jsonb);
 
 -- Integration API placeholders (admin fills secrets in dashboard)
@@ -285,5 +324,15 @@ insert into public.integration_settings (provider, label, enabled, public_value)
 on conflict (provider) do update set label = excluded.label;
 
 -- Support ticket sample
-insert into public.support_tickets (user_id, student_name, subject, message, channel, status) values
-('a0000000-0000-4000-8000-000000000002', 'Marcus Harrison', 'Quiz retry question', 'Can I review my incorrect answers from the Module 2 quiz?', 'email', 'open');
+insert into public.support_tickets (user_id, student_name, subject, message, channel, status)
+select
+  p.id,
+  coalesce(p.full_name, 'Student'),
+  'Quiz retry question',
+  'Can I review my incorrect answers from the Module 2 quiz?',
+  'email',
+  'open'
+from public.profiles p
+where p.role = 'student'
+order by p.created_at
+limit 1;

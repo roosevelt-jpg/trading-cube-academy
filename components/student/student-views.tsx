@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useRealtimeQuery } from '@/lib/hooks/use-realtime-query'
@@ -277,8 +277,6 @@ export function StudentLessonView({
   lessonSlug: string
   settings: SiteSettings
 }) {
-  const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState<string | null>(null)
   const fetcher = useMemo(
     () => async (client: ReturnType<typeof createClient>) => {
       const { data: course } = await client.from('courses').select('id,slug,title').eq('slug', courseSlug).maybeSingle()
@@ -308,6 +306,38 @@ export function StudentLessonView({
   if (loading) return <LoadingState />
   if (!data) return null
 
+  return (
+    <StudentLessonContent
+      courseSlug={courseSlug}
+      settings={settings}
+      data={data}
+      reload={reload}
+    />
+  )
+}
+
+function StudentLessonContent({
+  courseSlug,
+  settings,
+  data,
+  reload,
+}: {
+  courseSlug: string
+  settings: SiteSettings
+  data: {
+    course: { slug: string; title: string }
+    lesson: Lesson & { modules: Module }
+    siblings: Lesson[]
+    completedMap: Record<string, boolean>
+  }
+  reload: () => void
+}) {
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [autoCompleted, setAutoCompleted] = useState(false)
+  const bottomSentinelRef = useRef<HTMLDivElement>(null)
+  const completingRef = useRef(false)
+
   const { lesson, course, siblings, completedMap } = data
   const mod = lesson.modules
   const contentSiblings = siblings.filter((s) => s.lesson_type !== 'quiz')
@@ -326,7 +356,9 @@ export function StudentLessonView({
   const durationLabel = lesson.duration_label ?? formatDurationLabel(lesson.duration_seconds)
   const isComplete = completedMap[lesson.id]
 
-  const markComplete = async () => {
+  const markComplete = useCallback(async (auto = false) => {
+    if (completingRef.current || completedMap[lesson.id]) return
+    completingRef.current = true
     setSaving(true)
     setSaveError(null)
     try {
@@ -337,6 +369,7 @@ export function StudentLessonView({
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Could not save progress')
+      if (auto) setAutoCompleted(true)
       reload()
       if (next && next.lesson_type !== 'quiz') {
         window.location.href = `/student/courses/${courseSlug}/lessons/${next.slug}`
@@ -345,10 +378,24 @@ export function StudentLessonView({
       }
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : 'Could not save progress')
+      completingRef.current = false
     } finally {
       setSaving(false)
     }
-  }
+  }, [completedMap, courseSlug, lesson.id, mod.slug, next, reload])
+
+  useEffect(() => {
+    if (lesson.lesson_type !== 'reading' || isComplete || !bottomSentinelRef.current) return
+    const el = bottomSentinelRef.current
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) void markComplete(true)
+      },
+      { threshold: 0.6 },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [isComplete, lesson.lesson_type, markComplete])
 
   const nextHref =
     next?.lesson_type === 'quiz'
@@ -381,6 +428,7 @@ export function StudentLessonView({
               durationLabel={lesson.duration_label}
               durationSeconds={lesson.duration_seconds}
               className="mb-6"
+              onEnded={!isComplete ? () => void markComplete(true) : undefined}
             />
           )}
 
@@ -395,6 +443,7 @@ export function StudentLessonView({
                   <p className="text-sm">{content.takeaway}</p>
                 </Panel>
               )}
+              {!isComplete && <div ref={bottomSentinelRef} className="h-1" aria-hidden />}
             </div>
           )}
 
@@ -403,6 +452,7 @@ export function StudentLessonView({
           )}
 
           {saveError && <p className="mb-4 text-sm text-red">{saveError}</p>}
+          {autoCompleted && <p className="mb-4 text-sm text-green">Lesson completed automatically — advancing…</p>}
 
           <div className="mt-6 flex flex-wrap justify-between gap-3">
             {prev && (
@@ -420,7 +470,7 @@ export function StudentLessonView({
             )}
             <div className="flex gap-3">
               {!isComplete && (
-                <Btn size="sm" onClick={() => void markComplete()} disabled={saving}>
+                <Btn size="sm" onClick={() => void markComplete(false)} disabled={saving}>
                   {saving ? 'Saving…' : 'Mark Complete & Continue →'}
                 </Btn>
               )}
@@ -534,6 +584,18 @@ export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: 
 
   const { data, loading, reload } = useRealtimeQuery('quiz_questions', fetcher, [courseSlug, moduleSlug, profile.id])
 
+  useEffect(() => {
+    if (phase !== 'active' || !attempt?.id) return
+    const timer = setTimeout(() => {
+      void fetch('/api/quiz/save-answers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attemptId: attempt.id, answers }),
+      })
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [answers, attempt?.id, phase])
+
   const submitQuiz = useCallback(
     async (timedOut = false) => {
       if (!data || !attempt || submitting) return
@@ -597,9 +659,11 @@ export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: 
       }
 
       if (existing) {
+        const saved = (existing.answers ?? {}) as Record<string, string>
+        const firstOpen = data.questions.findIndex((q: { id: string }) => !saved[q.id])
         setAttempt(existing)
-        setAnswers({})
-        setQIndex(0)
+        setAnswers(saved)
+        setQIndex(firstOpen >= 0 ? firstOpen : 0)
         setProctorActive(data.proctoringRequired)
         setPhase('active')
         return
@@ -612,8 +676,10 @@ export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: 
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Could not start quiz')
-      setAttempt(json.attempt as QuizAttempt)
-      setAnswers({})
+      const started = json.attempt as QuizAttempt
+      const saved = (started.answers ?? {}) as Record<string, string>
+      setAttempt(started)
+      setAnswers(saved)
       setQIndex(0)
       setProctorActive(data.proctoringRequired)
       setPhase('active')
@@ -1083,8 +1149,6 @@ export function StudentSupportView({ profile }: { profile: Profile }) {
 }
 
 export function StudentCertificateView({ profile, courseSlug }: { profile: Profile; courseSlug: string }) {
-  const certRef = useRef<HTMLDivElement>(null)
-
   const fetcher = useMemo(
     () => async (client: ReturnType<typeof createClient>) => {
       const { data: course } = await client.from('courses').select('*').eq('slug', courseSlug).maybeSingle()
@@ -1111,6 +1175,10 @@ export function StudentCertificateView({ profile, courseSlug }: { profile: Profi
     )
 
   const downloadPdf = () => {
+    window.location.href = `/api/student/certificate/${courseSlug}/pdf`
+  }
+
+  const printCertificate = () => {
     window.print()
   }
 
@@ -1120,11 +1188,16 @@ export function StudentCertificateView({ profile, courseSlug }: { profile: Profi
         <Link href={`/student/courses/${courseSlug}`} className="mono muted text-xs">
           ← Back to course
         </Link>
-        <Btn size="sm" onClick={downloadPdf}>
-          Download / Print certificate
-        </Btn>
+        <div className="flex flex-wrap gap-3">
+          <Btn size="sm" onClick={downloadPdf}>
+            Download PDF
+          </Btn>
+          <Btn size="sm" variant="ghost" onClick={printCertificate}>
+            Print
+          </Btn>
+        </div>
       </div>
-      <div className="auth-wrap bg-grid certificate-print-area" ref={certRef}>
+      <div className="auth-wrap bg-grid certificate-print-area">
         <Panel className="max-w-2xl border-yellow p-16 text-center">
           <div className="mb-8 flex justify-center">
             <Logo variant="icon" href={false} />

@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev -p 43123",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "backfill-progress": "tsx scripts/backfill-student-progress.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
@@ -17,6 +18,7 @@
     "clsx": "^2.1.1",
     "lucide-react": "^1.16.0",
     "next": "16.3.3",
+    "pdf-lib": "^1.17.1",
     "react": "^19",
     "react-dom": "^19",
     "shadcn": "^4.11.0",
@@ -30,6 +32,7 @@
     "@types/react-dom": "^19",
     "postcss": "^8.5",
     "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.13",
     "typescript": "5.7.3"
   }
 }

@@ -82,3 +82,13 @@ create policy "students insert own activity"
     (meta->>'user_id')::uuid = auth.uid()
     or public.is_admin()
   );
+
+-- 006_activity_select_policy.sql
+drop policy if exists "students read activity" on public.activity_events;
+drop policy if exists "students read own activity" on public.activity_events;
+create policy "students read own activity"
+  on public.activity_events for select
+  using (
+    (meta->>'user_id')::uuid = auth.uid()
+    or public.is_admin()
+  );

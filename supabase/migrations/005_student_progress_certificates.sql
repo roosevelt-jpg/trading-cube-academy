@@ -2,6 +2,7 @@
 alter table public.certificates
   add column if not exists final_score int;
 
+drop policy if exists "students insert own activity" on public.activity_events;
 create policy "students insert own activity"
   on public.activity_events for insert
   with check (

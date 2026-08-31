@@ -103,7 +103,14 @@ export const DEFAULT_SITE_SETTINGS = {
     contactTitle: 'Contact',
     requestAccessLabel: 'Request access',
   },
-  enrollment: { inviteOnly: true, passingScoreDefault: 70, maxQuizAttempts: 3 },
+  enrollment: {
+    inviteOnly: true,
+    passingScoreDefault: 70,
+    maxQuizAttempts: 3,
+    autoEnrollAllLiveCourses: true,
+    defaultCourseIds: [] as string[],
+    stripePriceId: '',
+  },
   support: {
     email: 'support@thetradingcube.com',
     whatsapp: '447757464428',

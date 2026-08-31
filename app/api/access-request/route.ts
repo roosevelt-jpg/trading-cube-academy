@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getSupabaseEnv } from '@/lib/supabase/env'
 import { sendWhatsAppDeskNotification } from '@/lib/integrations/whatsapp'
+import { sendTransactionalEmail } from '@/lib/integrations/email'
+import { createServiceClient } from '@/lib/supabase/service'
 
 export async function POST(request: Request) {
   if (!getSupabaseEnv().configured) {
@@ -43,6 +45,16 @@ export async function POST(request: Request) {
       .filter(Boolean)
       .join('\n'),
   )
+
+  const service = createServiceClient()
+  const { data: supportRow } = await service.from('site_settings').select('value').eq('key', 'support').maybeSingle()
+  const supportEmail = (supportRow?.value as { email?: string } | undefined)?.email ?? 'support@thetradingcube.com'
+  void sendTransactionalEmail({
+    to: supportEmail,
+    subject: `New access request — ${full_name}`,
+    html: `<p><strong>${full_name}</strong> (${email}) requested access.</p>${message ? `<p>${message}</p>` : ''}<p>Review in Admin → Access Requests.</p>`,
+    text: `${full_name} (${email}) requested access.${message ? `\n\n${message}` : ''}`,
+  })
 
   return NextResponse.json({ request: data })
 }

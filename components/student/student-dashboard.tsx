@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useRealtimeQuery } from '@/lib/hooks/use-realtime-query'
@@ -52,17 +52,26 @@ export function StudentDashboard({ profile, initialData }: { profile: Profile; i
 
       <Eyebrow className="mb-4">Course progress</Eyebrow>
       <div className="mb-10 space-y-4">
-        {data.enrollments.map((e) => (
-          <Panel key={e.course_id} className="p-5">
-            <div className="mb-2 flex justify-between text-sm">
-              <Link href={`/student/courses/${e.course.slug}`} className="font-semibold hover:text-yellow">
-                {e.course.title}
-              </Link>
-              <span className="mono muted">{e.progress_pct}%</span>
-            </div>
-            <ProgressTrack value={e.progress_pct} green={e.progress_pct === 100} />
+        {data.enrollments.length === 0 ? (
+          <Panel className="p-6">
+            <p className="muted text-sm">No courses assigned yet. If you just signed up, refresh in a moment — or visit My Courses to purchase access if available.</p>
+            <Btn size="sm" href="/student/courses" className="mt-4">
+              View courses
+            </Btn>
           </Panel>
-        ))}
+        ) : (
+          data.enrollments.map((e) => (
+            <Panel key={e.course_id} className="p-5">
+              <div className="mb-2 flex justify-between text-sm">
+                <Link href={`/student/courses/${e.course.slug}`} className="font-semibold hover:text-yellow">
+                  {e.course.title}
+                </Link>
+                <span className="mono muted">{e.progress_pct}%</span>
+              </div>
+              <ProgressTrack value={e.progress_pct} green={e.progress_pct === 100} />
+            </Panel>
+          ))
+        )}
       </div>
 
       <Eyebrow className="mb-4">Recent activity</Eyebrow>
@@ -85,10 +94,17 @@ export function StudentDashboard({ profile, initialData }: { profile: Profile; i
 export function StudentCoursesList({
   profile,
   initialCourses,
+  availableCourses = [],
+  stripeEnabled = false,
+  academyPriceConfigured = false,
 }: {
   profile: Profile
   initialCourses?: (Course & { progress_pct: number })[]
+  availableCourses?: Course[]
+  stripeEnabled?: boolean
+  academyPriceConfigured?: boolean
 }) {
+  const [checkingOut, setCheckingOut] = useState<string | null>(null)
   const fetcher = useMemo(
     () => async (client: ReturnType<typeof createClient>) => {
       const [{ data: enrollments }, { data: courses }] = await Promise.all([
@@ -107,10 +123,35 @@ export function StudentCoursesList({
   if (loading && !data) return <LoadingState error={error} />
   if (!data) return <LoadingState error={error ?? 'Unable to load courses.'} />
 
+  const startCheckout = async (mode: 'academy' | 'course', courseId?: string) => {
+    setCheckingOut(courseId ?? 'academy')
+    try {
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode, courseId }),
+      })
+      const json = await res.json()
+      if (json.url) window.location.href = json.url
+    } finally {
+      setCheckingOut(null)
+    }
+  }
+
   return (
     <div className="content-pad">
       <Eyebrow>My Courses</Eyebrow>
       <h1 className="h1 mt-2 text-3xl">Your learning path</h1>
+
+      {stripeEnabled && academyPriceConfigured && !data.length && (
+        <Panel className="mt-6 p-6">
+          <p className="mb-4 text-sm">Purchase full academy access to unlock all live courses.</p>
+          <Btn size="sm" disabled={checkingOut === 'academy'} onClick={() => void startCheckout('academy')}>
+            {checkingOut === 'academy' ? 'Redirecting…' : 'Purchase academy access'}
+          </Btn>
+        </Panel>
+      )}
+
       <div className="mt-8 grid gap-5 md:grid-cols-2">
         {(data ?? []).map((course) => (
           <Link key={course.id} href={`/student/courses/${course.slug}`}>
@@ -132,7 +173,44 @@ export function StudentCoursesList({
             </Panel>
           </Link>
         ))}
+        {!data.length && !stripeEnabled && (
+          <p className="muted col-span-full text-sm">No courses assigned yet. Contact support if you expected access.</p>
+        )}
       </div>
+
+      {availableCourses.length > 0 && stripeEnabled && (
+        <>
+          <Eyebrow className="mt-10 mb-4">Available to purchase</Eyebrow>
+          <div className="grid gap-5 md:grid-cols-2">
+            {availableCourses.map((course) => (
+              <Panel key={course.id} className="overflow-hidden p-0">
+                {course.image_url && (
+                  <div className="h-32 w-full overflow-hidden">
+                    <img src={course.image_url} alt={course.title} className="size-full object-cover" />
+                  </div>
+                )}
+                <div className="flex items-center justify-between gap-4 p-6">
+                  <div>
+                    <p className="font-semibold">{course.title}</p>
+                    <p className="muted mt-1 text-sm">{course.description}</p>
+                  </div>
+                  {(course as Course & { stripe_price_id?: string }).stripe_price_id ? (
+                    <Btn
+                      size="sm"
+                      disabled={checkingOut === course.id}
+                      onClick={() => void startCheckout('course', course.id)}
+                    >
+                      {checkingOut === course.id ? '…' : 'Buy course'}
+                    </Btn>
+                  ) : (
+                    <Pill>Contact desk</Pill>
+                  )}
+                </div>
+              </Panel>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }

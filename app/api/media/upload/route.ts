@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { uploadToBlob } from '@/lib/storage/blob-server'
 import type { BlobCategory } from '@/lib/storage/blob'
-import { isBlobConfigured, safeFileName } from '@/lib/storage/blob'
+import { isBlobStorageConfigured } from '@/lib/integrations/blob'
+import { safeFileName } from '@/lib/storage/blob'
 import { getSupabaseEnv } from '@/lib/supabase/env'
 import { createClient } from '@/lib/supabase/server'
 
@@ -12,7 +13,7 @@ export async function POST(request: Request) {
   if (!getSupabaseEnv().configured) {
     return NextResponse.json({ error: 'Supabase is not configured' }, { status: 503 })
   }
-  if (!isBlobConfigured()) {
+  if (!(await isBlobStorageConfigured())) {
     return NextResponse.json(
       { error: 'Vercel Blob is not configured. Add BLOB_READ_WRITE_TOKEN in Vercel or Admin → Integrations.' },
       { status: 503 },

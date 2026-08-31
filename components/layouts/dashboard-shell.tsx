@@ -76,6 +76,7 @@ export function AdminShell({
     { href: '/admin/pages', label: '◈ Pages' },
     { href: '/admin/courses', label: '▤ Courses' },
     { href: '/admin/students', label: '☺ Students' },
+    { href: '/admin/access-requests', label: '◎ Access Requests' },
     { href: '/admin/support', label: '✉ Support', badge: openTicketCount > 0 ? openTicketCount : undefined },
     { href: '/admin/integrations', label: '⎈ Integrations' },
     { href: '/admin/settings', label: '⚙ Settings' },

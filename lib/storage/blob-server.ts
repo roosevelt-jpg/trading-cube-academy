@@ -1,6 +1,7 @@
 import { put } from '@vercel/blob'
 import type { BlobCategory } from '@/lib/storage/blob'
-import { buildBlobPathname, isBlobConfigured, blobAccessForCategory } from '@/lib/storage/blob'
+import { buildBlobPathname, blobAccessForCategory } from '@/lib/storage/blob'
+import { getBlobReadWriteToken } from '@/lib/integrations/blob'
 
 export async function uploadToBlob(
   category: BlobCategory,
@@ -9,8 +10,9 @@ export async function uploadToBlob(
   fileName: string,
   contentType?: string,
 ) {
-  if (!isBlobConfigured()) {
-    throw new Error('BLOB_READ_WRITE_TOKEN is not configured')
+  const token = await getBlobReadWriteToken()
+  if (!token) {
+    throw new Error('Blob storage is not configured. Add BLOB_READ_WRITE_TOKEN or configure Admin → Integrations → Vercel Blob.')
   }
 
   const pathname = buildBlobPathname(category, userId, fileName)
@@ -19,5 +21,6 @@ export async function uploadToBlob(
   return put(pathname, file, {
     access,
     contentType: contentType ?? (file instanceof File ? file.type : undefined),
+    token,
   })
 }

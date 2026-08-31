@@ -73,7 +73,14 @@ export type SiteSettings = {
     contactTitle?: string
     requestAccessLabel?: string
   }
-  enrollment?: { inviteOnly?: boolean; passingScoreDefault?: number; maxQuizAttempts?: number }
+  enrollment?: {
+    inviteOnly?: boolean
+    passingScoreDefault?: number
+    maxQuizAttempts?: number
+    autoEnrollAllLiveCourses?: boolean
+    defaultCourseIds?: string[]
+    stripePriceId?: string
+  }
   support?: { email?: string; whatsapp?: string; whatsappLabel?: string }
   images?: Record<string, string | Record<string, string>>
 }
@@ -91,6 +98,7 @@ export type Course = {
   sort_order: number
   published: boolean
   image_url?: string | null
+  stripe_price_id?: string | null
 }
 
 export type Module = {

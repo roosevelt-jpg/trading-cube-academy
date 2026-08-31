@@ -48,7 +48,8 @@ Create a project at [supabase.com](https://supabase.com), then run:
 # supabase/migrations/001_schema.sql
 # supabase/migrations/002_cms_images.sql
 # supabase/migrations/003_integrations_quiz_timer.sql   (or supabase/remote-setup.sql if LMS already exists)
-# supabase/migrations/004_quiz_proctoring.sql
+# supabase/migrations/007_support_admin_reply.sql
+# supabase/migrations/008_enrollment_payments.sql
 # supabase/seed.sql
 ```
 

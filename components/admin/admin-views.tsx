@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useRealtimeQuery } from '@/lib/hooks/use-realtime-query'
@@ -195,6 +195,7 @@ export function AdminCourseDetailView({ courseSlug }: { courseSlug: string }) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [imageUrl, setImageUrl] = useState('')
+  const [stripePriceId, setStripePriceId] = useState('')
   const [newModuleTitle, setNewModuleTitle] = useState('')
   const [addingModule, setAddingModule] = useState(false)
   const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
@@ -214,6 +215,7 @@ export function AdminCourseDetailView({ courseSlug }: { courseSlug: string }) {
       title: title || data.course.title,
       description: description || data.course.description,
       image_url: imageUrl || data.course.image_url,
+      stripe_price_id: stripePriceId || data.course.stripe_price_id || null,
       updated_at: new Date().toISOString(),
     }).eq('id', data.course.id)
     reload()
@@ -275,6 +277,15 @@ export function AdminCourseDetailView({ courseSlug }: { courseSlug: string }) {
           onChange={setImageUrl}
           category="courses"
         />
+        <div className="input-group">
+          <label>Stripe price ID (optional — per-course checkout)</label>
+          <input
+            className="input"
+            defaultValue={(data.course as { stripe_price_id?: string }).stripe_price_id ?? ''}
+            placeholder="price_..."
+            onChange={(e) => setStripePriceId(e.target.value)}
+          />
+        </div>
         <Btn size="sm" onClick={saveCourse}>Save course details</Btn>
       </Panel>
       <div className="space-y-3">
@@ -420,6 +431,14 @@ export function AdminStudentsView() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteName, setInviteName] = useState('')
   const [inviting, setInviting] = useState(false)
+  const [enrollAllLive, setEnrollAllLive] = useState(true)
+  const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>([])
+
+  const coursesFetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
+    const { data } = await client.from('courses').select('id,title,status').eq('status', 'live').order('sort_order')
+    return data ?? []
+  }, [])
+  const { data: liveCourses } = useRealtimeQuery('courses', coursesFetcher, [])
 
   const fetcher = useMemo(
     () => (client: ReturnType<typeof createClient>) => fetchAdminStudents(client),
@@ -449,7 +468,7 @@ export function AdminStudentsView() {
     await fetch('/api/admin/students/invite', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, fullName }),
+      body: JSON.stringify({ email, fullName, enrollAllLive: true }),
     })
     reload()
   }
@@ -458,13 +477,29 @@ export function AdminStudentsView() {
     if (!inviteEmail.trim()) return
     setInviting(true)
     try {
-      await resendInvite(inviteEmail, inviteName)
+      await fetch('/api/admin/students/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: inviteEmail,
+          fullName: inviteName,
+          enrollAllLive,
+          courseIds: enrollAllLive ? undefined : selectedCourseIds,
+        }),
+      })
       setInviteEmail('')
       setInviteName('')
       setShowInvite(false)
+      reload()
     } finally {
       setInviting(false)
     }
+  }
+
+  const toggleCourseSelection = (courseId: string) => {
+    setSelectedCourseIds((prev) =>
+      prev.includes(courseId) ? prev.filter((id) => id !== courseId) : [...prev, courseId],
+    )
   }
 
   const statusTone = (status: string) =>
@@ -484,17 +519,34 @@ export function AdminStudentsView() {
       </div>
 
       {showInvite && (
-        <Panel className="mt-6 flex flex-wrap items-end gap-3 p-5">
-          <div className="input-group min-w-[180px] flex-1">
-            <label>Full name</label>
-            <input className="input" value={inviteName} onChange={(e) => setInviteName(e.target.value)} />
+        <Panel className="mt-6 space-y-4 p-5">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="input-group min-w-[180px] flex-1">
+              <label>Full name</label>
+              <input className="input" value={inviteName} onChange={(e) => setInviteName(e.target.value)} />
+            </div>
+            <div className="input-group min-w-[200px] flex-1">
+              <label>Email</label>
+              <input className="input" type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
+            </div>
           </div>
-          <div className="input-group min-w-[200px] flex-1">
-            <label>Email</label>
-            <input className="input" type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
-          </div>
-          <Btn size="sm" onClick={() => void inviteStudent()} disabled={inviting || !inviteEmail.trim()}>
-            {inviting ? 'Sending…' : 'Send invite'}
+          <label className="flex cursor-pointer items-center gap-3 text-sm">
+            <input type="checkbox" className="accent-yellow" checked={enrollAllLive} onChange={(e) => setEnrollAllLive(e.target.checked)} />
+            Enroll in all live courses on invite
+          </label>
+          {!enrollAllLive && (
+            <div className="space-y-2">
+              <p className="mono muted text-[11px]">SELECT COURSES</p>
+              {(liveCourses ?? []).map((c: { id: string; title: string }) => (
+                <label key={c.id} className="flex cursor-pointer items-center gap-2 text-sm">
+                  <input type="checkbox" className="accent-yellow" checked={selectedCourseIds.includes(c.id)} onChange={() => toggleCourseSelection(c.id)} />
+                  {c.title}
+                </label>
+              ))}
+            </div>
+          )}
+          <Btn size="sm" onClick={() => void inviteStudent()} disabled={inviting || !inviteEmail.trim() || (!enrollAllLive && !selectedCourseIds.length)}>
+            {inviting ? 'Sending…' : 'Send invite & enroll'}
           </Btn>
         </Panel>
       )}
@@ -583,12 +635,23 @@ export function AdminStudentsView() {
 
 export function AdminStudentDetailView({ studentId }: { studentId: string }) {
   const [resetMsg, setResetMsg] = useState<string | null>(null)
+  const [enrolling, setEnrolling] = useState(false)
+  const [availableCourses, setAvailableCourses] = useState<{ id: string; title: string }[]>([])
   const fetcher = useMemo(
     () => (client: ReturnType<typeof createClient>) => fetchAdminStudentDetail(client, studentId),
     [studentId],
   )
 
   const { data, loading, reload } = useRealtimeQuery('enrollments', fetcher, [studentId])
+
+  useEffect(() => {
+    void (async () => {
+      const client = createClient()
+      const { data: courses } = await client.from('courses').select('id,title').eq('status', 'live').order('sort_order')
+      setAvailableCourses(courses ?? [])
+    })()
+  }, [])
+
   if (loading) return <LoadingState />
   if (!data?.profile) return null
 
@@ -609,6 +672,45 @@ export function AdminStudentDetailView({ studentId }: { studentId: string }) {
     if (res.ok) setResetMsg(`Temporary password: ${json.temporaryPassword}`)
     else setResetMsg(json.error ?? 'Reset failed')
   }
+
+  const enrollInCourse = async (courseId: string) => {
+    setEnrolling(true)
+    try {
+      await fetch(`/api/admin/students/${studentId}/enrollments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ courseIds: [courseId] }),
+      })
+      reload()
+    } finally {
+      setEnrolling(false)
+    }
+  }
+
+  const enrollAllLive = async () => {
+    setEnrolling(true)
+    try {
+      await fetch(`/api/admin/students/${studentId}/enrollments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enrollAllLive: true }),
+      })
+      reload()
+    } finally {
+      setEnrolling(false)
+    }
+  }
+
+  const unenrollCourse = async (courseId: string) => {
+    await fetch(`/api/admin/students/${studentId}/enrollments`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ courseId }),
+    })
+    reload()
+  }
+
+  const enrolledIds = new Set((data.enrollments ?? []).map((e: { course_id: string }) => e.course_id))
 
   const lastActive = profile.last_active_at
     ? formatRelativeDate(profile.last_active_at)
@@ -655,17 +757,43 @@ export function AdminStudentDetailView({ studentId }: { studentId: string }) {
       </div>
 
       <Eyebrow className="mt-8 mb-4">Course progress</Eyebrow>
+      <div className="mb-4 flex flex-wrap gap-2">
+        <Btn size="sm" variant="ghost" disabled={enrolling} onClick={() => void enrollAllLive()}>
+          Enroll in all live courses
+        </Btn>
+      </div>
       <div className="space-y-4">
         {data.enrollments.map((e: any) => (
           <Panel key={e.course_id} className="p-4">
-            <div className="mb-2 flex justify-between text-sm">
+            <div className="mb-2 flex justify-between gap-3 text-sm">
               <span>{e.courses?.title}</span>
-              <span className="mono muted">{e.progress_pct}%</span>
+              <div className="flex items-center gap-3">
+                <span className="mono muted">{e.progress_pct}%</span>
+                <button type="button" className="mono text-xs text-red-400 hover:underline" onClick={() => void unenrollCourse(e.course_id)}>
+                  Remove
+                </button>
+              </div>
             </div>
             <ProgressTrack value={e.progress_pct} green={e.progress_pct === 100} />
           </Panel>
         ))}
+        {!data.enrollments.length && <p className="muted text-sm">No courses assigned yet.</p>}
       </div>
+
+      {availableCourses.some((c) => !enrolledIds.has(c.id)) && (
+        <>
+          <Eyebrow className="mt-8 mb-4">Add course enrollment</Eyebrow>
+          <div className="flex flex-wrap gap-2">
+            {availableCourses
+              .filter((c) => !enrolledIds.has(c.id))
+              .map((c) => (
+                <Btn key={c.id} size="sm" variant="ghost" disabled={enrolling} onClick={() => void enrollInCourse(c.id)}>
+                  + {c.title}
+                </Btn>
+              ))}
+          </div>
+        </>
+      )}
 
       <Eyebrow className="mt-8 mb-4">Quiz history</Eyebrow>
       <div className="overflow-x-auto">
@@ -1028,7 +1156,25 @@ export function AdminSettingsView({ initialSettings }: { initialSettings?: SiteS
           <label>Max quiz attempts (default)</label>
           <input className="input" type="number" min={1} max={10} defaultValue={enrollment.maxQuizAttempts ?? 3} onChange={(e) => setDraft({ ...draft, enrollment: { ...enrollment, maxQuizAttempts: Number(e.target.value) } })} />
         </div>
-        <p className="muted text-xs">Course unlock rule: Sequential — students must pass each module quiz to advance.</p>
+        <label className="flex cursor-pointer items-center gap-3 text-sm">
+          <input
+            type="checkbox"
+            className="accent-yellow"
+            defaultChecked={enrollment.autoEnrollAllLiveCourses !== false}
+            onChange={(e) => setDraft({ ...draft, enrollment: { ...enrollment, autoEnrollAllLiveCourses: e.target.checked } })}
+          />
+          Auto-enroll new students in all live courses (invite, signup, and Stripe checkout)
+        </label>
+        <div className="input-group">
+          <label>Stripe academy price ID (full access checkout)</label>
+          <input
+            className="input"
+            defaultValue={enrollment.stripePriceId ?? ''}
+            placeholder="price_..."
+            onChange={(e) => setDraft({ ...draft, enrollment: { ...enrollment, stripePriceId: e.target.value } })}
+          />
+        </div>
+        <p className="muted text-xs">Course unlock rule: Sequential — students must pass each module quiz to advance. Per-course Stripe prices are set on each course edit page.</p>
       </Panel>
 
       <Panel className="mt-6 space-y-4 p-6">
@@ -1120,5 +1266,101 @@ function TestimonialImageEditor({ onSave }: { onSave: (id: string, url: string) 
         </div>
       ))}
     </Panel>
+  )
+}
+
+type AccessRequest = {
+  id: string
+  full_name: string | null
+  email: string
+  message: string | null
+  status: 'pending' | 'approved' | 'rejected'
+  created_at: string
+}
+
+export function AdminAccessRequestsView() {
+  const [processing, setProcessing] = useState<string | null>(null)
+  const fetcher = useMemo(
+    () => async (_client: ReturnType<typeof createClient>) => {
+      const res = await fetch('/api/admin/access-requests')
+      if (!res.ok) return [] as AccessRequest[]
+      const json = await res.json()
+      return (json.requests ?? []) as AccessRequest[]
+    },
+    [],
+  )
+  const { data, loading, reload } = useRealtimeQuery('access_requests', fetcher, [])
+  const pending = (data ?? []).filter((r) => r.status === 'pending')
+
+  const approve = async (id: string) => {
+    setProcessing(id)
+    try {
+      await fetch(`/api/admin/access-requests/${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enrollAllLive: true }),
+      })
+      reload()
+    } finally {
+      setProcessing(null)
+    }
+  }
+
+  const reject = async (id: string) => {
+    setProcessing(id)
+    try {
+      await fetch(`/api/admin/access-requests/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'rejected' }),
+      })
+      reload()
+    } finally {
+      setProcessing(null)
+    }
+  }
+
+  if (loading) return <LoadingState />
+
+  return (
+    <div className="content-pad">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <Eyebrow>Access requests</Eyebrow>
+          <h1 className="h1 mt-2 text-3xl">Request access inbox</h1>
+        </div>
+        <Pill tone="yellow">{pending.length} PENDING</Pill>
+      </div>
+      <p className="muted mt-2 text-sm">Approve to send a Supabase invite, enroll in all live courses, and email the student a welcome message.</p>
+      <div className="mt-8 space-y-3">
+        {(data ?? []).map((r) => (
+          <Panel key={r.id} className={`p-5 ${r.status !== 'pending' ? 'opacity-70' : ''}`}>
+            <div className="flex flex-wrap justify-between gap-4">
+              <div>
+                <p className="font-semibold">{r.full_name ?? 'Applicant'} — {r.email}</p>
+                {r.message && <p className="muted mt-2 text-sm">{r.message}</p>}
+                <p className="mono muted mt-2 text-[11px]">{formatDateTime(r.created_at)}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Pill tone={r.status === 'approved' ? 'green' : r.status === 'rejected' ? 'red' : 'yellow'}>
+                  {r.status.toUpperCase()}
+                </Pill>
+                {r.status === 'pending' && (
+                  <>
+                    <Btn size="sm" disabled={processing === r.id} onClick={() => void approve(r.id)}>
+                      {processing === r.id ? '…' : 'Approve & invite'}
+                    </Btn>
+                    <Btn size="sm" variant="ghost" disabled={processing === r.id} onClick={() => void reject(r.id)}>
+                      Reject
+                    </Btn>
+                  </>
+                )}
+              </div>
+            </div>
+          </Panel>
+        ))}
+        {!data?.length && <p className="muted text-sm">No access requests yet.</p>}
+      </div>
+    </div>
   )
 }

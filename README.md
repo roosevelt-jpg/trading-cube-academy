@@ -47,14 +47,15 @@ Create a project at [supabase.com](https://supabase.com), then run:
 # supabase/seed.sql
 ```
 
-**Hosted Supabase:** run auth users first, then seed:
+**Easiest — run in terminal (no SQL Editor):**
 
 ```bash
-node scripts/seed-auth-users.mjs
-# Then run supabase/seed.sql in the SQL Editor (or psql)
+node scripts/seed-auth-users.mjs   # login accounts
+node scripts/seed-lms-data.mjs     # courses, lessons, quizzes, student progress
+node scripts/sync-supabase-content.mjs
 ```
 
-**Supabase SQL Editor run order** (paste each file separately — the SQL Editor cannot run `node` commands):
+**Or via Supabase SQL Editor** (paste each file separately — the SQL Editor cannot run `node` commands):
 
 1. `supabase/snippets/fix-profiles-columns.sql` (if profiles table predates migrations)
 2. `supabase/snippets/seed-courses.sql` — courses, modules, lessons, quizzes

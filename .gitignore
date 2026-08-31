@@ -12,6 +12,8 @@ __v0_jsx-dev-runtime.ts
 # Common ignores
 node_modules
 .next/
+.supabase/
+supabase/.temp/
 .DS_Store
 AGENTS.md
 CLAUDE.md

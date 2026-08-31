@@ -251,12 +251,21 @@ export function defaultPage(slug: string) {
   return DEFAULT_PAGES[slug] ?? null
 }
 
+export function normalizeAssetUrl(url?: string | null, fallback?: string) {
+  if (!url?.trim()) return fallback ?? null
+  if (url.includes('unsplash.com') || url.includes('picsum.photos')) return fallback ?? DEFAULT_IMAGES.hero
+  return url
+}
+
 export function mergeSettings(db: Record<string, unknown> | null | undefined) {
   const base = DEFAULT_SITE_SETTINGS
   if (!db) return base
+  const homepage = { ...base.homepage, ...(db.homepage as object) } as typeof base.homepage
+  homepage.heroImageUrl = normalizeAssetUrl(homepage.heroImageUrl, DEFAULT_IMAGES.hero) ?? DEFAULT_IMAGES.hero
+  homepage.heroTerminalImageUrl = normalizeAssetUrl(homepage.heroTerminalImageUrl, DEFAULT_IMAGES.heroTerminal) ?? DEFAULT_IMAGES.heroTerminal
   return {
     branding: { ...base.branding, ...(db.branding as object) },
-    homepage: { ...base.homepage, ...(db.homepage as object) },
+    homepage,
     footer: { ...base.footer, ...(db.footer as object) },
     enrollment: { ...base.enrollment, ...(db.enrollment as object) },
     support: { ...base.support, ...(db.support as object) },

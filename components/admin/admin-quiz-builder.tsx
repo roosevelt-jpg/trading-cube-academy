@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useRealtimeQuery } from '@/lib/hooks/use-realtime-query'
 import { Btn, Eyebrow, LoadingState, Panel, Pill } from '@/components/ui/academy-ui'
-import type { Profile, QuizAttempt, QuizOption } from '@/lib/types/database'
+import type { Profile, QuizAttempt, QuizOption, QuizProctoringRecording } from '@/lib/types/database'
 import { formatDateTime } from '@/lib/utils/datetime'
 
 type QuizQuestion = { id: string; module_id: string; question: string; sort_order: number }
@@ -22,6 +22,7 @@ export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
   const [passing, setPassing] = useState<number | null>(null)
   const [attemptsAllowed, setAttemptsAllowed] = useState<number | null>(null)
   const [timeLimitMinutes, setTimeLimitMinutes] = useState<number | null>(null)
+  const [proctoringRequired, setProctoringRequired] = useState<boolean | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newQuestion, setNewQuestion] = useState('')
   const [newOptions, setNewOptions] = useState(EMPTY_OPTIONS)
@@ -39,12 +40,13 @@ export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
 
   const moduleFetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     if (!activeModuleId) return null
-    const [{ data: questions }, { data: options }, { data: settings }, { data: mod }, { data: attempts }] = await Promise.all([
+    const [{ data: questions }, { data: options }, { data: settings }, { data: mod }, { data: attempts }, { data: recordings }] = await Promise.all([
       client.from('quiz_questions').select('*').eq('module_id', activeModuleId).order('sort_order'),
       client.from('quiz_options').select('*'),
       client.from('module_quiz_settings').select('*').eq('module_id', activeModuleId).maybeSingle(),
       client.from('modules').select('*').eq('id', activeModuleId).maybeSingle(),
       client.from('quiz_attempts').select('*').eq('module_id', activeModuleId).order('created_at', { ascending: false }),
+      client.from('quiz_proctoring_recordings').select('*').eq('module_id', activeModuleId).order('created_at', { ascending: false }),
     ])
 
     const questionIds = (questions ?? []).map((q: QuizQuestion) => q.id)
@@ -56,15 +58,21 @@ export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
       : { data: [] as Profile[] }
 
     const profileMap = Object.fromEntries(((profiles ?? []) as Profile[]).map((p) => [p.id, p]))
+    const recordingsByAttempt = ((recordings ?? []) as QuizProctoringRecording[]).reduce<Record<string, QuizProctoringRecording[]>>((acc, r) => {
+      acc[r.attempt_id] = [...(acc[r.attempt_id] ?? []), r]
+      return acc
+    }, {})
 
     return {
       module: mod,
       questions: (questions ?? []) as QuizQuestion[],
       options: optsForModule as QuizOption[],
       settings,
+      recordingsByAttempt,
       attempts: ((attempts ?? []) as QuizAttempt[]).map((a) => ({
         ...a,
         student: profileMap[a.user_id] ?? null,
+        recordings: recordingsByAttempt[a.id] ?? [],
       })),
     }
   }, [activeModuleId])
@@ -96,16 +104,19 @@ export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
     const allowed = attemptsAllowed ?? settings?.attempts_allowed ?? 3
     const mins = timeLimitMinutes ?? (settings?.time_limit_seconds ? Math.round(settings.time_limit_seconds / 60) : null)
     const time_limit_seconds = mins && mins > 0 ? mins * 60 : null
+    const proctoring = proctoringRequired ?? settings?.proctoring_required ?? true
     await createClient().from('module_quiz_settings').upsert({
       module_id: mod.id,
       passing_score: score,
       attempts_allowed: allowed,
       time_limit_seconds,
       question_order: settings?.question_order ?? 'sequential',
+      proctoring_required: proctoring,
     })
     setPassing(null)
     setAttemptsAllowed(null)
     setTimeLimitMinutes(null)
+    setProctoringRequired(null)
     reloadModule()
   }
 
@@ -150,6 +161,7 @@ export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
   }
 
   const currentTimeMins = timeLimitMinutes ?? (settings?.time_limit_seconds ? Math.round(settings.time_limit_seconds / 60) : 0)
+  const currentProctoring = proctoringRequired ?? settings?.proctoring_required ?? true
 
   return (
     <div className="content-pad max-w-3xl">
@@ -185,7 +197,16 @@ export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
             <input className="input" type="number" min={0} placeholder="0 = no timer" defaultValue={currentTimeMins || ''} onChange={(e) => setTimeLimitMinutes(Number(e.target.value))} />
           </div>
         </div>
-        <p className="muted text-xs">Timed exams use a server-synced countdown and auto-submit when time runs out.</p>
+        <label className="flex cursor-pointer items-center gap-3 text-sm">
+          <input
+            type="checkbox"
+            className="accent-yellow"
+            checked={currentProctoring}
+            onChange={(e) => setProctoringRequired(e.target.checked)}
+          />
+          Require webcam proctoring (camera + microphone recorded for admin review)
+        </label>
+        <p className="muted text-xs">Timed exams use a server-synced countdown and auto-submit when time runs out. Proctored exams require students to enable their camera before starting.</p>
       </Panel>
 
       <div className="mt-8 flex items-center justify-between gap-4">
@@ -235,14 +256,20 @@ export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
       )}
 
       <Eyebrow className="mt-10 mb-4">Student submissions ({attempts.length})</Eyebrow>
-      <p className="muted mb-4 text-sm">Multiple-choice answers are auto-marked. Review each attempt below — score, pass/fail, and selected answers are stored in Supabase.</p>
+      <p className="muted mb-4 text-sm">Multiple-choice answers are auto-marked. Proctored attempts include webcam recordings for anti-cheat review.</p>
       <div className="space-y-4">
-        {attempts.map((attempt) => (
+        {attempts.map((attempt) => {
+          const typed = attempt as QuizAttempt & { student: Profile | null; recordings: QuizProctoringRecording[] }
+          const recording = typed.recordings?.[0]
+          return (
           <Panel key={attempt.id} className="p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="font-semibold">{(attempt as QuizAttempt & { student: Profile | null }).student?.full_name ?? 'Student'}</p>
-                <p className="mono muted text-xs">{(attempt as QuizAttempt & { student: Profile | null }).student?.email}</p>
+                <p className="font-semibold">{typed.student?.full_name ?? 'Student'}</p>
+                <p className="mono muted text-xs">{typed.student?.email}</p>
+                {attempt.proctoring_status && attempt.proctoring_status !== 'none' && (
+                  <Pill className="mt-2">{attempt.proctoring_status === 'recorded' ? 'Proctoring recorded' : 'Proctoring consented'}</Pill>
+                )}
               </div>
               <div className="text-right">
                 <Pill tone={attempt.passed ? 'green' : attempt.timed_out ? 'red' : undefined}>{attempt.passed ? 'Passed' : attempt.timed_out ? 'Timed out' : 'Failed'}</Pill>
@@ -250,6 +277,14 @@ export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
                 <p className="mono muted text-[11px]">Attempt {attempt.attempt_number} · {formatDateTime(attempt.completed_at ?? attempt.started_at)}</p>
               </div>
             </div>
+            {recording?.blob_url && (
+              <div className="mt-4 border-t border-[var(--border-soft)] pt-4">
+                <p className="mono muted mb-2 text-[11px]">PROCTORING RECORDING · {recording.duration_seconds ? `${recording.duration_seconds}s` : 'session'}</p>
+                <video controls className="max-h-64 w-full rounded border border-[var(--border-soft)] bg-black" src={recording.blob_url}>
+                  <track kind="captions" />
+                </video>
+              </div>
+            )}
             {attempt.status === 'completed' || attempt.status === 'timed_out' ? (
               <div className="mt-4 space-y-3 border-t border-[var(--border-soft)] pt-4">
                 {questions.map((q, qi) => {
@@ -273,7 +308,7 @@ export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
               <p className="muted mt-3 text-sm">In progress…</p>
             )}
           </Panel>
-        ))}
+        )})}
         {!attempts.length && <p className="muted text-sm">No student attempts for this module yet.</p>}
       </div>
     </div>

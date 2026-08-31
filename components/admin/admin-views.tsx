@@ -12,8 +12,9 @@ import { formatDateTime } from '@/lib/utils/datetime'
 
 import type { AdminDashboardData } from '@/lib/data/server-dashboard'
 import { AdminQuizBuilder } from '@/components/admin/admin-quiz-builder'
+import { AdminVideoManager } from '@/components/admin/admin-video-manager'
 
-export { AdminQuizBuilder }
+export { AdminQuizBuilder, AdminVideoManager }
 
 export function AdminDashboardView({ initialData }: { initialData?: AdminDashboardData }) {
   const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
@@ -222,58 +223,6 @@ export function AdminContentEditor({ courseSlug, moduleSlug }: { courseSlug: str
           )}
         </div>
       )}
-    </div>
-  )
-}
-
-export function AdminVideoManager({ courseSlug }: { courseSlug: string }) {
-  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
-    const { data: course } = await client.from('courses').select('id,title').eq('slug', courseSlug).maybeSingle()
-    const { data: videos } = await client.from('youtube_videos').select('*').order('sort_order')
-    const { data: lessons } = course ? await client.from('lessons').select('id,title,youtube_video_id,module_id, modules!inner(course_id)').eq('modules.course_id', course.id) : { data: [] }
-    return { course, videos: videos ?? [], lessons: lessons ?? [] }
-  }, [courseSlug])
-
-  const { data, loading, reload } = useRealtimeQuery('youtube_videos', fetcher, [courseSlug])
-  const [videoId, setVideoId] = useState('')
-  const [title, setTitle] = useState('')
-
-  if (loading) return <LoadingState />
-
-  const addVideo = async () => {
-    const client = createClient()
-    await client.from('youtube_videos').insert({ title, video_id: videoId, course_name: data?.course?.title, visibility: 'course', published: true })
-    setVideoId('')
-    setTitle('')
-    reload()
-  }
-
-  const updateLessonVideo = async (lessonId: string, yt: string) => {
-    await createClient().from('lessons').update({ youtube_video_id: yt }).eq('id', lessonId)
-    reload()
-  }
-
-  return (
-    <div className="content-pad">
-      <Link href={`/admin/courses/${courseSlug}`} className="mono muted text-xs">← {data?.course?.title}</Link>
-      <Eyebrow className="mt-4 mb-2">Video management</Eyebrow>
-      <p className="muted mb-6 text-sm">Unlisted YouTube embeds for course and marketing videos.</p>
-
-      <Panel className="mb-8 space-y-4 p-6">
-        <Eyebrow>Add marketing video</Eyebrow>
-        <div className="input-group"><label>Title</label><input className="input" value={title} onChange={(e) => setTitle(e.target.value)} /></div>
-        <div className="input-group"><label>YouTube video ID</label><input className="input" value={videoId} onChange={(e) => setVideoId(e.target.value)} placeholder="dQw4w9WgXcQ" /></div>
-        <Btn size="sm" onClick={addVideo}>Add video</Btn>
-      </Panel>
-
-      <div className="space-y-3">
-        {(data?.lessons ?? []).map((l: any) => (
-          <Panel key={l.id} className="flex flex-wrap items-center gap-4 p-4">
-            <span className="flex-1 text-sm">{l.title}</span>
-            <input className="input max-w-xs" defaultValue={l.youtube_video_id ?? ''} onBlur={(e) => updateLessonVideo(l.id, e.target.value)} placeholder="YouTube ID" />
-          </Panel>
-        ))}
-      </div>
     </div>
   )
 }

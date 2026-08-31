@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const body = await request.json() as { moduleId: string }
+  const body = await request.json() as { moduleId: string; proctoringConsented?: boolean }
   if (!body.moduleId) return NextResponse.json({ error: 'moduleId required' }, { status: 400 })
 
   const service = createServiceClient()
@@ -42,6 +42,9 @@ export async function POST(request: Request) {
 
   const attemptNumber = (priorAttempts?.length ?? 0) + 1
 
+  const proctoringRequired = settings?.proctoring_required !== false
+  const proctoringConsented = Boolean(body.proctoringConsented && proctoringRequired)
+
   const { data: attempt, error } = await service.from('quiz_attempts').insert({
     user_id: user.id,
     module_id: body.moduleId,
@@ -52,6 +55,8 @@ export async function POST(request: Request) {
     started_at: now.toISOString(),
     expires_at: expiresAt,
     status: 'in_progress',
+    proctoring_consented_at: proctoringConsented ? now.toISOString() : null,
+    proctoring_status: proctoringConsented ? 'consented' : 'none',
   }).select('*').single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

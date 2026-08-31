@@ -8,6 +8,9 @@ import { useQuizTimer } from '@/lib/hooks/use-quiz-timer'
 import { useSupportContact } from '@/lib/hooks/use-support-contact'
 import { supportContactUrl } from '@/lib/support/contact'
 import { Btn, Candles, Eyebrow, HelpBlock, LoadingState, Logo, Panel, Pill, ProgressTrack } from '@/components/ui/academy-ui'
+import { YoutubePlayer } from '@/components/ui/youtube-player'
+import { QuizProctor, uploadQuizProctorRecording } from '@/components/quiz/quiz-proctor'
+import { parseYoutubeVideoId, formatDurationLabel } from '@/lib/youtube/utils'
 import { formatDateTime } from '@/lib/utils/datetime'
 import type { Course, Lesson, Module, ModuleProgress, Profile, QuizAttempt, SiteSettings } from '@/lib/types/database'
 
@@ -155,7 +158,11 @@ export function StudentLessonView({ profile, courseSlug, lessonSlug, settings }:
   const idx = siblings.findIndex((s: { slug: string }) => s.slug === lessonSlug)
   const prev = idx > 0 ? siblings[idx - 1] : null
   const next = idx < siblings.length - 1 ? siblings[idx + 1] : null
-  const content = lesson.content as { summary?: string; paragraphs?: string[]; takeaway?: string }
+  const content = lesson.content as { summary?: string; paragraphs?: string[]; takeaway?: string; youtubeUrl?: string }
+  const videoSource = lesson.youtube_video_id ?? content.youtubeUrl
+  const lessonNum = idx + 1
+  const lessonTotal = siblings.length
+  const durationLabel = lesson.duration_label ?? formatDurationLabel(lesson.duration_seconds)
 
   const markComplete = async () => {
     setSaving(true)
@@ -167,15 +174,25 @@ export function StudentLessonView({ profile, courseSlug, lessonSlug, settings }:
   }
 
   return (
-    <div className="content-pad">
+    <div className="content-pad max-w-3xl">
       <Link href={`/student/courses/${courseSlug}/modules/${mod.slug}`} className="mono muted text-xs">← {course.title}</Link>
-      <Eyebrow className="mt-4 mb-2">{lesson.lesson_type === 'video' ? 'Video Lesson' : 'Written Lesson'}</Eyebrow>
+      <div className="mb-4 mt-4 flex flex-wrap items-center justify-between gap-3">
+        <Eyebrow>{lesson.lesson_type === 'video' ? 'Video Lesson' : 'Written Lesson'}</Eyebrow>
+        <span className="mono muted text-xs">
+          Lesson {lessonNum} of {lessonTotal}
+          {durationLabel ? ` · ${durationLabel}` : ''}
+        </span>
+      </div>
       <h1 className="h1 mb-5 text-2xl">{lesson.title}</h1>
 
-      {lesson.lesson_type === 'video' && lesson.youtube_video_id && (
-        <Panel className="mb-4 aspect-video overflow-hidden bg-black">
-          <iframe className="size-full" src={`https://www.youtube.com/embed/${lesson.youtube_video_id}`} title={lesson.title} allowFullScreen />
-        </Panel>
+      {lesson.lesson_type === 'video' && (
+        <YoutubePlayer
+          videoInput={videoSource}
+          title={lesson.title}
+          durationLabel={lesson.duration_label}
+          durationSeconds={lesson.duration_seconds}
+          className="mb-6"
+        />
       )}
 
       {lesson.lesson_type === 'reading' && (
@@ -212,6 +229,9 @@ export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: 
   const [starting, setStarting] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [phase, setPhase] = useState<'intro' | 'active' | 'result'>('intro')
+  const [cameraReady, setCameraReady] = useState(false)
+  const [cameraError, setCameraError] = useState<string | null>(null)
+  const [proctorActive, setProctorActive] = useState(false)
 
   const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data: course } = await client.from('courses').select('id').eq('slug', courseSlug).maybeSingle()
@@ -229,13 +249,15 @@ export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: 
     }, {})
     const completed = (priorAttempts ?? []).filter((a: QuizAttempt) => a.status !== 'in_progress')
     const inProgress = (priorAttempts ?? []).find((a: QuizAttempt) => a.status === 'in_progress') as QuizAttempt | undefined
+    const quizSettings = settings as { passing_score?: number; attempts_allowed?: number; time_limit_seconds?: number | null; proctoring_required?: boolean } | null
     return {
       module: mod,
       questions: questions ?? [],
       optByQ,
-      passing: settings?.passing_score ?? 70,
-      attemptsAllowed: settings?.attempts_allowed ?? 3,
-      timeLimitSeconds: settings?.time_limit_seconds ?? null,
+      passing: quizSettings?.passing_score ?? 70,
+      attemptsAllowed: quizSettings?.attempts_allowed ?? 3,
+      timeLimitSeconds: quizSettings?.time_limit_seconds ?? null,
+      proctoringRequired: quizSettings?.proctoring_required !== false,
       attemptsUsed: completed.length,
       inProgressAttempt: inProgress ?? null,
     }
@@ -247,6 +269,9 @@ export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: 
     if (!data || !attempt || submitting) return
     setSubmitting(true)
     try {
+      if (data.proctoringRequired) {
+        await uploadQuizProctorRecording()
+      }
       const res = await fetch('/api/quiz/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -255,6 +280,7 @@ export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: 
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Submit failed')
       const a = json.attempt
+      setProctorActive(false)
       setResult({
         score: a.score,
         passed: a.passed,
@@ -270,7 +296,7 @@ export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: 
   }, [answers, attempt, data, reload, submitting])
 
   const handleExpire = useCallback(() => {
-    submitQuiz(true)
+    void submitQuiz(true)
   }, [submitQuiz])
 
   const { formatted: timerDisplay, urgent, synced } = useQuizTimer(
@@ -278,20 +304,42 @@ export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: 
     handleExpire,
   )
 
-  const startQuiz = async () => {
+  const beginAttempt = async (existing?: QuizAttempt | null) => {
     if (!data?.module) return
     setStarting(true)
+    setCameraError(null)
     try {
+      if (data.proctoringRequired) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+          stream.getTracks().forEach((t) => t.stop())
+          setCameraReady(true)
+        } catch {
+          setCameraError('Camera and microphone are required for proctored exams. Allow access in your browser settings.')
+          return
+        }
+      }
+
+      if (existing) {
+        setAttempt(existing)
+        setAnswers({})
+        setQIndex(0)
+        setProctorActive(data.proctoringRequired)
+        setPhase('active')
+        return
+      }
+
       const res = await fetch('/api/quiz/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ moduleId: data.module.id }),
+        body: JSON.stringify({ moduleId: data.module.id, proctoringConsented: data.proctoringRequired }),
       })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Could not start quiz')
       setAttempt(json.attempt as QuizAttempt)
       setAnswers({})
       setQIndex(0)
+      setProctorActive(data.proctoringRequired)
       setPhase('active')
     } finally {
       setStarting(false)
@@ -307,100 +355,103 @@ export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: 
 
   if (result || phase === 'result') {
     return (
-      <div className="auth-wrap bg-grid items-start pt-16">
-        <div className="w-full max-w-[640px]">
-          <Panel className="mb-6 p-10 text-center">
-            <Pill tone={result?.passed ? 'green' : 'red'} className="mb-4">
-              {result?.timedOut ? 'Time expired' : result?.passed ? 'Passed' : 'Not passed'}
-            </Pill>
-            <p className="h1 mono text-[52px]" style={{ color: result?.passed ? 'var(--green)' : 'var(--red)' }}>{result?.score}%</p>
-            <p className="muted mb-2 text-[13px]">Passing score is {data.passing}%</p>
-            {result?.completedAt && (
-              <p className="mono muted mb-6 text-[11px]">Submitted {formatDateTime(result.completedAt)}</p>
-            )}
-            <Btn href={`/student/courses/${courseSlug}`}>{result?.passed ? 'Continue to next module →' : 'Review course'}</Btn>
-          </Panel>
-        </div>
+      <div className="content-pad max-w-2xl">
+        <Link href={`/student/courses/${courseSlug}`} className="mono muted text-xs">← Back to course</Link>
+        <Panel className="mt-6 p-10 text-center">
+          <Pill tone={result?.passed ? 'green' : 'red'} className="mb-4">
+            {result?.timedOut ? 'Time expired' : result?.passed ? 'Passed' : 'Not passed'}
+          </Pill>
+          <p className="h1 mono text-[52px]" style={{ color: result?.passed ? 'var(--green)' : 'var(--red)' }}>{result?.score}%</p>
+          <p className="muted mb-2 text-[13px]">Passing score is {data.passing}%</p>
+          {result?.completedAt && (
+            <p className="mono muted mb-6 text-[11px]">Submitted {formatDateTime(result.completedAt)}</p>
+          )}
+          <Btn href={`/student/courses/${courseSlug}`}>{result?.passed ? 'Continue to next module →' : 'Review course'}</Btn>
+        </Panel>
       </div>
     )
   }
 
   if (phase === 'intro') {
     return (
-      <div className="auth-wrap bg-grid items-start pt-16">
-        <div className="w-full max-w-[640px]">
-          <Eyebrow className="mb-2">{data.module.title} · Examination</Eyebrow>
-          <Panel className="space-y-4 p-8">
-            <h1 className="h2 text-xl">Before you begin</h1>
-            <ul className="muted space-y-2 text-sm">
-              <li>{data.questions.length} questions · passing score {data.passing}%</li>
-              <li>{attemptsRemaining} attempt{attemptsRemaining === 1 ? '' : 's'} remaining</li>
-              {data.timeLimitSeconds ? (
-                <li>Time limit: {Math.round(data.timeLimitSeconds / 60)} minutes (server-synced timer)</li>
-              ) : (
-                <li>No time limit</li>
-              )}
-            </ul>
-            {data.inProgressAttempt && (
-              <p className="text-sm text-yellow">You have an in-progress attempt — resume below.</p>
+      <div className="content-pad max-w-2xl">
+        <Link href={`/student/courses/${courseSlug}/modules/${moduleSlug}`} className="mono muted text-xs">← Back to module</Link>
+        <Eyebrow className="mb-2 mt-4">{data.module.title} · Examination</Eyebrow>
+        <Panel className="space-y-4 p-8">
+          <h1 className="h2 text-xl">Before you begin</h1>
+          <ul className="muted space-y-2 text-sm">
+            <li>{data.questions.length} questions · passing score {data.passing}%</li>
+            <li>{attemptsRemaining} attempt{attemptsRemaining === 1 ? '' : 's'} remaining</li>
+            {data.timeLimitSeconds ? (
+              <li>Time limit: {Math.round(data.timeLimitSeconds / 60)} minutes (server-synced timer)</li>
+            ) : (
+              <li>No time limit</li>
             )}
-            <Btn
-              onClick={() => {
-                if (data.inProgressAttempt) {
-                  setAttempt(data.inProgressAttempt)
-                  setPhase('active')
-                } else {
-                  startQuiz()
-                }
-              }}
-              disabled={starting || attemptsRemaining === 0}
-            >
-              {starting ? 'Starting…' : data.inProgressAttempt ? 'Resume quiz' : 'Start quiz'}
-            </Btn>
-            {attemptsRemaining === 0 && (
-              <p className="text-sm text-red">No attempts remaining. Contact support if you need a reset.</p>
+            {data.proctoringRequired && (
+              <li className="text-yellow">Proctored exam — your camera and microphone will be recorded for admin review</li>
             )}
-          </Panel>
-        </div>
+          </ul>
+          {cameraError && <p className="text-sm text-red">{cameraError}</p>}
+          {data.inProgressAttempt && (
+            <p className="text-sm text-yellow">You have an in-progress attempt — resume below.</p>
+          )}
+          <Btn
+            onClick={() => void beginAttempt(data.inProgressAttempt ?? null)}
+            disabled={starting || attemptsRemaining === 0}
+          >
+            {starting ? 'Starting…' : data.inProgressAttempt ? 'Enable camera & resume' : data.proctoringRequired ? 'Enable camera & start exam' : 'Start quiz'}
+          </Btn>
+          {attemptsRemaining === 0 && (
+            <p className="text-sm text-red">No attempts remaining. Contact support if you need a reset.</p>
+          )}
+        </Panel>
       </div>
     )
   }
 
   return (
-    <div className="auth-wrap bg-grid items-start pt-16">
-      <div className="w-full max-w-[640px]">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <Eyebrow>{data.module.title} Quiz</Eyebrow>
-          <div className="flex items-center gap-4">
-            {data.timeLimitSeconds && attempt?.expires_at && (
-              <span className={`mono text-sm font-medium ${urgent ? 'text-red' : 'text-yellow'}`} aria-live="polite">
-                ⏱ {timerDisplay}{!synced ? ' …' : ''}
-              </span>
-            )}
-            <span className="mono muted text-xs">Question {qIndex + 1} of {data.questions.length}</span>
-          </div>
-        </div>
-        <Panel className="p-8">
-          <h2 className="h2 mb-6 text-lg leading-snug">{question.question}</h2>
-          <div className="space-y-3">
-            {opts.map((o: { id: string; option_text: string }) => (
-              <label key={o.id} className={`panel panel-sm flex cursor-pointer items-center gap-3.5 p-4 ${answers[question.id] === o.id ? 'border-yellow' : ''}`}>
-                <input type="radio" name={question.id} checked={answers[question.id] === o.id} onChange={() => setAnswers({ ...answers, [question.id]: o.id })} className="accent-yellow" />
-                <span className="text-sm">{o.option_text}</span>
-              </label>
-            ))}
-          </div>
-        </Panel>
-        <div className="mt-5 flex justify-between">
-          <Btn variant="ghost" size="sm" onClick={() => setQIndex(Math.max(0, qIndex - 1))} disabled={qIndex === 0}>← Previous</Btn>
-          {qIndex < data.questions.length - 1 ? (
-            <Btn size="sm" onClick={() => setQIndex(qIndex + 1)} disabled={!answers[question.id]}>Next Question →</Btn>
-          ) : (
-            <Btn size="sm" onClick={() => submitQuiz(false)} disabled={submitting || Object.keys(answers).length < data.questions.length}>
-              {submitting ? 'Submitting…' : 'Submit Quiz'}
-            </Btn>
+    <div className="content-pad max-w-2xl">
+      {proctorActive && attempt && (
+        <QuizProctor
+          attemptId={attempt.id}
+          moduleId={data.module.id}
+          active={proctorActive}
+          onReady={() => setCameraReady(true)}
+          onError={(msg) => setCameraError(msg)}
+        />
+      )}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <Eyebrow>{data.module.title} Quiz</Eyebrow>
+        <div className="flex items-center gap-4">
+          {data.timeLimitSeconds && attempt?.expires_at && (
+            <span className={`mono text-sm font-medium ${urgent ? 'text-red' : 'text-yellow'}`} aria-live="polite">
+              ⏱ {timerDisplay}{!synced ? ' …' : ''}
+            </span>
           )}
+          <span className="mono muted text-xs">Question {qIndex + 1} of {data.questions.length}</span>
         </div>
+      </div>
+      {cameraError && <p className="mb-4 text-sm text-red">{cameraError}</p>}
+      <Panel className="p-8">
+        <h2 className="h2 mb-6 text-lg leading-snug">{question.question}</h2>
+        <div className="space-y-3">
+          {opts.map((o: { id: string; option_text: string }) => (
+            <label key={o.id} className={`panel panel-sm flex cursor-pointer items-center gap-3.5 p-4 ${answers[question.id] === o.id ? 'border-yellow' : ''}`}>
+              <input type="radio" name={question.id} checked={answers[question.id] === o.id} onChange={() => setAnswers({ ...answers, [question.id]: o.id })} className="accent-yellow" />
+              <span className="text-sm">{o.option_text}</span>
+            </label>
+          ))}
+        </div>
+      </Panel>
+      <div className="mt-5 flex justify-between">
+        <Btn variant="ghost" size="sm" onClick={() => setQIndex(Math.max(0, qIndex - 1))} disabled={qIndex === 0}>← Previous</Btn>
+        {qIndex < data.questions.length - 1 ? (
+          <Btn size="sm" onClick={() => setQIndex(qIndex + 1)} disabled={!answers[question.id]}>Next Question →</Btn>
+        ) : (
+          <Btn size="sm" onClick={() => void submitQuiz(false)} disabled={submitting || Object.keys(answers).length < data.questions.length}>
+            {submitting ? 'Submitting…' : 'Submit Quiz'}
+          </Btn>
+        )}
       </div>
     </div>
   )

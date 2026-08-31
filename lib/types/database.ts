@@ -103,6 +103,7 @@ export type ModuleQuizSettings = {
   attempts_allowed: number
   question_order: string
   time_limit_seconds?: number | null
+  proctoring_required?: boolean
 }
 
 export type IntegrationSetting = {
@@ -128,7 +129,22 @@ export type QuizAttempt = {
   completed_at?: string | null
   timed_out?: boolean
   status?: 'in_progress' | 'completed' | 'timed_out'
+  proctoring_consented_at?: string | null
+  proctoring_status?: 'none' | 'consented' | 'recorded' | string
   created_at?: string
+}
+
+export type QuizProctoringRecording = {
+  id: string
+  attempt_id: string
+  user_id: string
+  module_id: string
+  blob_pathname: string | null
+  blob_url: string | null
+  mime_type: string | null
+  duration_seconds: number | null
+  file_size_bytes: number | null
+  created_at: string
 }
 export type Certificate = { id: string; user_id: string; course_id: string; certificate_code: string; issued_at: string }
 export type SupportTicket = { id: string; user_id: string | null; student_name: string | null; subject: string; message: string; channel: string; status: 'open' | 'closed'; created_at: string }

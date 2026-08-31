@@ -21,12 +21,14 @@ A deployment-ready CMS/LMS for structured trading education. All marketing copy,
 - Live date/time clock in the dashboard header
 - Course overview with sequential module unlock
 - Video and reading lessons with progress tracking
+- **In-dashboard YouTube embeds** for video lessons (sidebar stays visible while watching)
 - Module quizzes with **server-synced timer**, pass/fail, and attempt limits
+- **Proctored exams** — webcam + microphone recording during quizzes for admin anti-cheat review
 - Certificates, profile, and support tickets
 
 ### Admin dashboard
 - Platform overview and activity feed
-- Course management (modules, content editor, video IDs, quiz builder with timer)
+- Course management (modules, content editor, **YouTube video manager**, quiz builder with timer & proctoring)
 - **Integrations** — Stripe, YouTube Data API, Vercel Blob, email, WhatsApp, OpenAI
 - Student list and detail with progress
 - Support inbox
@@ -44,6 +46,7 @@ Create a project at [supabase.com](https://supabase.com), then run:
 # supabase/migrations/001_schema.sql
 # supabase/migrations/002_cms_images.sql
 # supabase/migrations/003_integrations_quiz_timer.sql   (or supabase/remote-setup.sql if LMS already exists)
+# supabase/migrations/004_quiz_proctoring.sql
 # supabase/seed.sql
 ```
 
@@ -89,11 +92,18 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 SUPABASE_SECRET_KEY=your-secret-key
 ```
 
-Optional for material uploads (also configurable in Admin → Integrations):
+Optional for material uploads and **quiz proctoring recordings** (also configurable in Admin → Integrations):
 
 ```env
 BLOB_READ_WRITE_TOKEN=vercel_blob_token
 ```
+
+### YouTube Data API (Admin → Integrations)
+
+1. Create a Google Cloud project and enable **YouTube Data API v3**
+2. Create an API key and paste it under Admin → Integrations → YouTube
+3. Enable the integration — admins can then sync video durations and validate embeds from **Admin → Courses → Videos**
+4. Lesson videos play **inside the student dashboard** via embed; a video ID or unlisted YouTube URL is enough even without the API
 
 ### 3. Install and run
 
@@ -124,6 +134,7 @@ Run **`node scripts/seed-auth-users.mjs`** before or after `seed.sql` on hosted 
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
    - `SUPABASE_SECRET_KEY` (service role — server routes & WhatsApp notify)
+   - `BLOB_READ_WRITE_TOKEN` (quiz proctoring webcam recordings)
    - `NEXT_PUBLIC_SITE_URL=https://tca.myflynai.com`
 3. Connect the repo and deploy; Vercel runs `pnpm build` automatically
 4. Run `node scripts/seed-auth-users.mjs` and `node scripts/seed-lms-data.mjs` against production Supabase once

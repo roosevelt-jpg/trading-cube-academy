@@ -28,7 +28,9 @@ A deployment-ready CMS/LMS for structured trading education. All marketing copy,
 
 ### Admin dashboard
 - Platform overview and activity feed
-- Course management (modules, content editor, **YouTube video manager**, quiz builder with timer & proctoring)
+- **Homepage CMS** — edit hero, section headings, stats, pillars, steps, testimonials, FAQ, and video marquee
+- **Site pages** — about, courses, method, FAQ, privacy, terms, contact (all with default content)
+- Course management (modules, content editor, YouTube video manager, quiz builder with timer & proctoring)
 - **Integrations** — Stripe, YouTube Data API, Vercel Blob, email, WhatsApp, OpenAI
 - Student list and detail with progress
 - Support inbox

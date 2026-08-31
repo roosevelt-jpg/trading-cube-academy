@@ -56,6 +56,16 @@ export function ContactPageView({ settings, page }: { settings: SiteSettings; pa
           <Eyebrow className="mb-3">{page?.eyebrow ?? 'CONTACT THE DESK'}</Eyebrow>
           <h1 className="h1 text-3xl">{page?.title ?? 'Request Access'}</h1>
           <p className="muted mt-4 text-[15px] leading-relaxed">{page?.description}</p>
+          {(page?.sections ?? []).length > 0 && (
+            <div className="mt-8 space-y-4">
+              {page!.sections!.map((section) => (
+                <Panel key={section.heading} className="p-5">
+                  <h2 className="text-base font-semibold">{section.heading}</h2>
+                  <p className="muted mt-2 text-sm leading-relaxed">{section.body}</p>
+                </Panel>
+              ))}
+            </div>
+          )}
           <div className="mt-8 space-y-4">
             <Panel className="p-5">
               <Eyebrow className="mb-2">Email</Eyebrow>

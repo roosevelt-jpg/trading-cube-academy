@@ -33,13 +33,38 @@ export const DEFAULT_IMAGES = {
   },
 } as const
 
+export const DEFAULT_HOMEPAGE_SECTIONS = {
+  pillars: { eyebrow: 'Why Trading Cube', headline: 'Most trading education stops at theory. Ours stops at proof.' },
+  curriculum: { eyebrow: 'Curriculum', headline: 'Six courses. One sequence.' },
+  videos: {
+    eyebrow: 'Inside the Curriculum',
+    headline: 'A look at the actual lessons.',
+    description: 'Unlisted YouTube lessons, streamed straight from the platform — hover to pause.',
+  },
+  howItWorks: { eyebrow: 'How It Works', headline: 'From application to certificate.' },
+  results: { eyebrow: 'Results', headline: 'Traders who finished the sequence.' },
+  faq: { eyebrow: 'Frequently Asked', headline: 'Before you request access.' },
+  cta: {
+    eyebrow: 'Created by traders, for traders',
+    headline: 'Ready to trade with structure?',
+    buttonLabel: 'Request Access →',
+  },
+} as const
+
+export const DEFAULT_NAVIGATION: { label: string; href: string }[] = [
+  { label: 'Courses', href: '/courses' },
+  { label: 'Method', href: '/method' },
+  { label: 'About', href: '/about' },
+  { label: 'FAQ', href: '#mkt-faq' },
+]
+
 export const DEFAULT_SITE_SETTINGS = {
   branding: {
     companyName: 'The Trading Cube Academy',
     tagline: 'Created by traders, for traders.',
     logoIconPathname: DEFAULT_IMAGES.logoIcon,
     logoBannerPathname: DEFAULT_IMAGES.logoBanner,
-    logoPathname: DEFAULT_IMAGES.logoIcon,
+    logoPathname: DEFAULT_IMAGES.logoBanner,
   },
   homepage: {
     eyebrow: 'Private trading education · Invite only',
@@ -50,11 +75,19 @@ export const DEFAULT_SITE_SETTINGS = {
     heroImageUrl: DEFAULT_IMAGES.hero,
     heroTerminalImageUrl: DEFAULT_IMAGES.heroTerminal,
     ctaImageUrl: DEFAULT_IMAGES.ctaBand,
+    heroPreview: { label: 'Live curriculum preview', title: 'Price Action Mastery · Module 3' },
+    ctas: { requestAccess: 'Request Access →', memberLogin: 'Member Login' },
+    sections: { ...DEFAULT_HOMEPAGE_SECTIONS },
+    navigation: [...DEFAULT_NAVIGATION],
   },
   footer: {
     description: 'Created by traders, for traders. A structured academy for people serious about the markets.',
     email: 'support@thetradingcube.com',
     whatsapp: '447757464428',
+    curriculumTitle: 'Curriculum',
+    academyTitle: 'Academy',
+    contactTitle: 'Contact',
+    requestAccessLabel: 'Request access',
   },
   enrollment: { inviteOnly: true, passingScoreDefault: 70, maxQuizAttempts: 3 },
   support: {
@@ -260,15 +293,42 @@ export function normalizeAssetUrl(url?: string | null, fallback?: string) {
 export function mergeSettings(db: Record<string, unknown> | null | undefined) {
   const base = DEFAULT_SITE_SETTINGS
   if (!db) return base
-  const homepage = { ...base.homepage, ...(db.homepage as object) } as typeof base.homepage
+  const homepage = {
+    ...base.homepage,
+    ...(db.homepage as object),
+    sections: {
+      ...base.homepage.sections,
+      ...((db.homepage as { sections?: object })?.sections ?? {}),
+    },
+    navigation: ((db.homepage as { navigation?: typeof DEFAULT_NAVIGATION })?.navigation?.length
+      ? (db.homepage as { navigation: typeof DEFAULT_NAVIGATION }).navigation
+      : base.homepage.navigation),
+    ctas: { ...base.homepage.ctas, ...((db.homepage as { ctas?: object })?.ctas ?? {}) },
+    heroPreview: { ...base.homepage.heroPreview, ...((db.homepage as { heroPreview?: object })?.heroPreview ?? {}) },
+  } as typeof base.homepage
   homepage.heroImageUrl = normalizeAssetUrl(homepage.heroImageUrl, DEFAULT_IMAGES.hero) ?? DEFAULT_IMAGES.hero
   homepage.heroTerminalImageUrl = normalizeAssetUrl(homepage.heroTerminalImageUrl, DEFAULT_IMAGES.heroTerminal) ?? DEFAULT_IMAGES.heroTerminal
+  homepage.ctaImageUrl = normalizeAssetUrl(homepage.ctaImageUrl, DEFAULT_IMAGES.ctaBand) ?? DEFAULT_IMAGES.ctaBand
+
+  const branding = { ...base.branding, ...(db.branding as object) }
+  if (branding.logoBannerPathname?.includes('WhatsApp') || branding.logoBannerPathname?.includes('blob.vercel-storage.com')) {
+    branding.logoBannerPathname = DEFAULT_IMAGES.logoBanner
+  }
+  if (branding.logoPathname?.includes('WhatsApp') || branding.logoPathname?.includes('blob.vercel-storage.com')) {
+    branding.logoPathname = DEFAULT_IMAGES.logoBanner
+  }
+
+  const images = { ...base.images, ...(db.images as object) } as typeof base.images
+  if (typeof images.logo === 'string' && (images.logo.includes('WhatsApp') || images.logo.includes('blob.vercel-storage.com'))) {
+    images.logo = DEFAULT_IMAGES.logoBanner
+  }
+
   return {
-    branding: { ...base.branding, ...(db.branding as object) },
+    branding,
     homepage,
     footer: { ...base.footer, ...(db.footer as object) },
     enrollment: { ...base.enrollment, ...(db.enrollment as object) },
     support: { ...base.support, ...(db.support as object) },
-    images: { ...base.images, ...(db.images as object) },
+    images,
   }
 }

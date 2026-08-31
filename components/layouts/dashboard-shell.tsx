@@ -70,6 +70,7 @@ export function AdminShell({
   const pathname = usePathname()
   const links = [
     { href: '/admin', label: '◆ Dashboard', exact: true },
+    { href: '/admin/homepage', label: '◉ Homepage CMS' },
     { href: '/admin/pages', label: '◈ Pages' },
     { href: '/admin/courses', label: '▤ Courses' },
     { href: '/admin/students', label: '☺ Students' },

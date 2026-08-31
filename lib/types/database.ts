@@ -8,6 +8,15 @@ export type Profile = {
   last_active_at: string | null
 }
 
+export type HomepageSectionCopy = {
+  eyebrow?: string
+  headline?: string
+  description?: string
+  buttonLabel?: string
+}
+
+export type NavLink = { label: string; href: string }
+
 export type SiteSettings = {
   branding?: { companyName?: string; tagline?: string; logoPathname?: string; logoIconPathname?: string; logoBannerPathname?: string }
   homepage?: {
@@ -18,8 +27,28 @@ export type SiteSettings = {
     heroImageUrl?: string
     heroTerminalImageUrl?: string
     ctaImageUrl?: string
+    heroPreview?: { label?: string; title?: string }
+    ctas?: { requestAccess?: string; memberLogin?: string }
+    sections?: {
+      pillars?: HomepageSectionCopy
+      curriculum?: HomepageSectionCopy
+      videos?: HomepageSectionCopy
+      howItWorks?: HomepageSectionCopy
+      results?: HomepageSectionCopy
+      faq?: HomepageSectionCopy
+      cta?: HomepageSectionCopy
+    }
+    navigation?: NavLink[]
   }
-  footer?: { description?: string; email?: string; whatsapp?: string }
+  footer?: {
+    description?: string
+    email?: string
+    whatsapp?: string
+    curriculumTitle?: string
+    academyTitle?: string
+    contactTitle?: string
+    requestAccessLabel?: string
+  }
   enrollment?: { inviteOnly?: boolean; passingScoreDefault?: number; maxQuizAttempts?: number }
   support?: { email?: string; whatsapp?: string; whatsappLabel?: string }
   images?: Record<string, string | Record<string, string>>

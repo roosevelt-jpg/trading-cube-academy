@@ -74,18 +74,39 @@ async function main() {
     heroImageUrl: DEFAULT_IMAGES.hero,
     heroTerminalImageUrl: DEFAULT_IMAGES.heroTerminal,
     ctaImageUrl: DEFAULT_IMAGES.ctaBand,
+    heroPreview: { label: 'Live curriculum preview', title: 'Price Action Mastery · Module 3' },
+    ctas: { requestAccess: 'Request Access →', memberLogin: 'Member Login' },
+    sections: {
+      pillars: { eyebrow: 'Why Trading Cube', headline: 'Most trading education stops at theory. Ours stops at proof.' },
+      curriculum: { eyebrow: 'Curriculum', headline: 'Six courses. One sequence.' },
+      videos: { eyebrow: 'Inside the Curriculum', headline: 'A look at the actual lessons.', description: 'Unlisted YouTube lessons, streamed straight from the platform — hover to pause.' },
+      howItWorks: { eyebrow: 'How It Works', headline: 'From application to certificate.' },
+      results: { eyebrow: 'Results', headline: 'Traders who finished the sequence.' },
+      faq: { eyebrow: 'Frequently Asked', headline: 'Before you request access.' },
+      cta: { eyebrow: 'Created by traders, for traders', headline: 'Ready to trade with structure?', buttonLabel: 'Request Access →' },
+    },
+    navigation: [
+      { label: 'Courses', href: '/courses' },
+      { label: 'Method', href: '/method' },
+      { label: 'About', href: '/about' },
+      { label: 'FAQ', href: '#mkt-faq' },
+    ],
   }
   const branding = {
     companyName: 'The Trading Cube Academy',
     tagline: 'Created by traders, for traders.',
     logoIconPathname: '/brand/logo-icon.svg',
     logoBannerPathname: '/brand/logo-banner.jpg',
-    logoPathname: '/brand/logo-icon.svg',
+    logoPathname: '/brand/logo-banner.jpg',
   }
   const footer = {
     description: 'Created by traders, for traders. A structured academy for people serious about the markets.',
     email: 'support@thetradingcube.com',
     whatsapp: '447757464428',
+    curriculumTitle: 'Curriculum',
+    academyTitle: 'Academy',
+    contactTitle: 'Contact',
+    requestAccessLabel: 'Request access',
   }
 
   for (const [key, value] of Object.entries({ homepage, branding, footer, images: DEFAULT_IMAGES })) {

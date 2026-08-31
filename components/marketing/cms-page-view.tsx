@@ -41,7 +41,7 @@ export function CmsPageView({ page, settings }: { page: PageContent; settings: S
       <footer className="mkt-footer border-t border-[var(--border-soft)]">
         <div className="mkt-footer-grid">
           <div>
-            <Logo settings={settings} className="mb-3" />
+            <Logo settings={settings} variant="banner" className="mb-3" />
             <p className="muted max-w-xs text-sm">{settings.footer?.description}</p>
           </div>
           <div className="mkt-footer-col">

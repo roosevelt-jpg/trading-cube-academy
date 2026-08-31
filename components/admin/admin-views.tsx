@@ -13,8 +13,9 @@ import { formatDateTime } from '@/lib/utils/datetime'
 import type { AdminDashboardData } from '@/lib/data/server-dashboard'
 import { AdminQuizBuilder } from '@/components/admin/admin-quiz-builder'
 import { AdminVideoManager } from '@/components/admin/admin-video-manager'
+import { AdminHomepageCmsView } from '@/components/admin/admin-homepage-cms'
 
-export { AdminQuizBuilder, AdminVideoManager }
+export { AdminQuizBuilder, AdminVideoManager, AdminHomepageCmsView }
 
 export function AdminDashboardView({ initialData }: { initialData?: AdminDashboardData }) {
   const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
@@ -420,8 +421,19 @@ export function AdminPageEditor({ slug }: { slug: string }) {
       </Panel>
 
       <Eyebrow className="mt-8 mb-4">Sections</Eyebrow>
+      <Btn size="sm" variant="ghost" className="mb-4" onClick={() => {
+        const sections = [...(current.sections ?? []), { heading: 'New section', body: '' }]
+        setDraft({ ...draft, sections })
+      }}>+ Add section</Btn>
       {(current.sections ?? []).map((section, i) => (
         <Panel key={`${section.heading}-${i}`} className="mb-4 space-y-3 p-5">
+          <div className="flex justify-end">
+            <button type="button" className="mono text-xs text-red-400 hover:underline" onClick={() => {
+              const sections = [...(current.sections ?? [])]
+              sections.splice(i, 1)
+              setDraft({ ...draft, sections })
+            }}>Remove section</button>
+          </div>
           <div className="input-group"><label>Heading</label><input className="input" value={section.heading} onChange={(e) => {
             const sections = [...(current.sections ?? [])]
             sections[i] = { ...sections[i], heading: e.target.value }
@@ -434,6 +446,12 @@ export function AdminPageEditor({ slug }: { slug: string }) {
           }} /></div>
         </Panel>
       ))}
+
+      <Panel className="mt-6 space-y-4 p-6">
+        <Eyebrow>Primary call to action</Eyebrow>
+        <div className="input-group"><label>Button label</label><input className="input" value={current.primary_cta_label ?? ''} onChange={(e) => setDraft({ ...draft, primary_cta_label: e.target.value })} /></div>
+        <div className="input-group"><label>Button link</label><input className="input" value={current.primary_cta_href ?? ''} onChange={(e) => setDraft({ ...draft, primary_cta_href: e.target.value })} placeholder="/contact" /></div>
+      </Panel>
     </div>
   )
 }
@@ -490,15 +508,19 @@ export function AdminSettingsView({ initialSettings }: { initialSettings?: SiteS
       <Panel className="mt-8 space-y-4 p-6">
         <Eyebrow>Branding</Eyebrow>
         <div className="input-group"><label>Academy name</label><input className="input" defaultValue={branding.companyName} onChange={(e) => setDraft({ ...draft, branding: { ...branding, companyName: e.target.value } })} /></div>
-        <div className="input-group"><label>Logo icon URL</label><input className="input" defaultValue={branding.logoIconPathname ?? branding.logoPathname} onChange={(e) => setDraft({ ...draft, branding: { ...branding, logoIconPathname: e.target.value, logoPathname: e.target.value } })} placeholder="/brand/logo-icon.svg" /></div>
-        <div className="input-group"><label>Logo banner URL (optional wordmark)</label><input className="input" defaultValue={branding.logoBannerPathname} onChange={(e) => setDraft({ ...draft, branding: { ...branding, logoBannerPathname: e.target.value } })} placeholder="/brand/logo-banner.jpg" /></div>
-        {(branding.logoIconPathname ?? branding.logoPathname) && <img src={branding.logoIconPathname ?? branding.logoPathname} alt="Logo icon preview" className="size-12 object-contain" />}
+        <div className="input-group"><label>Tagline</label><input className="input" defaultValue={branding.tagline} onChange={(e) => setDraft({ ...draft, branding: { ...branding, tagline: e.target.value } })} /></div>
+        <div className="input-group"><label>Logo icon URL</label><input className="input" defaultValue={branding.logoIconPathname ?? branding.logoPathname} onChange={(e) => setDraft({ ...draft, branding: { ...branding, logoIconPathname: e.target.value } })} placeholder="/brand/logo-icon.svg" /></div>
+        <div className="input-group"><label>Logo banner URL (wordmark)</label><input className="input" defaultValue={branding.logoBannerPathname} onChange={(e) => setDraft({ ...draft, branding: { ...branding, logoBannerPathname: e.target.value, logoPathname: e.target.value } })} placeholder="/brand/logo-banner.jpg" /></div>
+        {(branding.logoBannerPathname ?? branding.logoPathname) && <img src={branding.logoBannerPathname ?? branding.logoPathname} alt="Logo preview" className="h-10 w-auto max-w-[220px] object-contain" />}
       </Panel>
 
       <Panel className="mt-6 space-y-4 p-6">
-        <Eyebrow>Homepage</Eyebrow>
+        <Eyebrow>Homepage quick edit</Eyebrow>
+        <p className="muted text-xs">For full homepage CMS (stats, pillars, FAQ, videos, section headings), use <Link href="/admin/homepage" className="text-yellow hover:underline">Homepage CMS</Link>.</p>
+        <div className="input-group"><label>Hero eyebrow</label><input className="input" defaultValue={hp.eyebrow} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, eyebrow: e.target.value } })} /></div>
         <div className="input-group"><label>Hero headline</label><input className="input" defaultValue={hp.headline} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, headline: e.target.value } })} /></div>
         <div className="input-group"><label>Hero description</label><textarea className="input min-h-[100px]" defaultValue={hp.description} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, description: e.target.value } })} /></div>
+        <div className="input-group"><label>Trust line</label><input className="input" defaultValue={hp.trustLine} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, trustLine: e.target.value } })} /></div>
         <div className="input-group"><label>Hero image URL</label><input className="input" defaultValue={hp.heroImageUrl} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, heroImageUrl: e.target.value } })} placeholder="Trading charts / market desk photo" /></div>
         <div className="input-group"><label>Hero terminal overlay URL</label><input className="input" defaultValue={hp.heroTerminalImageUrl} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, heroTerminalImageUrl: e.target.value } })} placeholder="Optional secondary hero image" /></div>
         <div className="input-group"><label>CTA band image URL</label><input className="input" defaultValue={hp.ctaImageUrl} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, ctaImageUrl: e.target.value } })} placeholder="Trading floor / execution image" /></div>

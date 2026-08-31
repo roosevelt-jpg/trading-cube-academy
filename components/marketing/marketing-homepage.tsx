@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getSupabaseEnv } from '@/lib/supabase/env'
 import type { MarketingBundle } from '@/lib/data/marketing'
 import { defaultMarketingBundle } from '@/lib/defaults/cms-defaults'
-import { mergeSettings, DEFAULT_IMAGES } from '@/lib/defaults/cms-defaults'
+import { mergeSettings, DEFAULT_IMAGES, DEFAULT_HOMEPAGE_SECTIONS, DEFAULT_NAVIGATION } from '@/lib/defaults/cms-defaults'
 import { Btn, Eyebrow, Logo, Panel } from '@/components/ui/academy-ui'
 import type { SiteSettings } from '@/lib/types/database'
 import { tierLabel, whatsappUrl } from '@/lib/utils/site'
@@ -44,33 +44,40 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
     }
     const tables = ['site_settings', 'marketing_stats', 'marketing_pillars', 'marketing_steps', 'testimonials', 'faq_items', 'courses', 'youtube_videos']
     const channels = tables.map((table) =>
-      client.channel(`mkt-${table}`).on('postgres_changes', { event: '*', schema: 'public', table }, reload).subscribe()
+      client.channel(`mkt-${table}-${Math.random().toString(36).slice(2)}`).on('postgres_changes', { event: '*', schema: 'public', table }, reload).subscribe()
     )
     return () => { channels.forEach((ch) => client.removeChannel(ch)) }
   }, [initialData])
 
   const settings = data.settings
   const home = settings.homepage ?? {}
+  const sections = { ...DEFAULT_HOMEPAGE_SECTIONS, ...home.sections }
+  const navigation = home.navigation?.length ? home.navigation : DEFAULT_NAVIGATION
+  const ctas = { requestAccess: 'Request Access →', memberLogin: 'Member Login', ...home.ctas }
   const heroImage = resolveMarketingHeroImage(home.heroImageUrl, settings)
   const pillarImages = [
     (settings.images as Record<string, Record<string, string>> | undefined)?.pillars?.sequence,
     (settings.images as Record<string, Record<string, string>> | undefined)?.pillars?.accountability,
     (settings.images as Record<string, Record<string, string>> | undefined)?.pillars?.support,
   ]
+  const waLabel = settings.support?.whatsappLabel ?? 'WhatsApp the desk'
 
   return (
     <main className="min-h-screen bg-background">
       <header className="mkt-header flex-wrap gap-4">
         <Logo settings={settings} variant="banner" />
         <nav className="mkt-nav order-3 flex w-full flex-wrap gap-4 md:order-none md:w-auto md:gap-9">
-          <Link href="/courses">Courses</Link>
-          <Link href="/method">Method</Link>
-          <Link href="/about">About</Link>
-          <a href="#mkt-faq">FAQ</a>
+          {navigation.map((link) =>
+            link.href.startsWith('#') ? (
+              <a key={link.href} href={link.href}>{link.label}</a>
+            ) : (
+              <Link key={link.href} href={link.href}>{link.label}</Link>
+            ),
+          )}
         </nav>
         <div className="flex gap-3">
-          <Btn variant="ghost" size="sm" href="/login">Member Login</Btn>
-          <Btn variant="primary" size="sm" href="/contact">Request Access</Btn>
+          <Btn variant="ghost" size="sm" href="/login">{ctas.memberLogin}</Btn>
+          <Btn variant="primary" size="sm" href="/contact">{ctas.requestAccess?.replace(' →', '') ?? 'Request Access'}</Btn>
         </div>
       </header>
 
@@ -80,8 +87,8 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
           <h1 className="h1 mb-5 text-[46px] leading-[1.12]">{home.headline}</h1>
           <p className="muted mb-8 max-w-[480px] text-base leading-relaxed">{home.description}</p>
           <div className="mb-8 flex flex-wrap gap-3.5">
-            <Btn href="/contact">Request Access →</Btn>
-            <Btn variant="ghost" href="/login">Member Login</Btn>
+            <Btn href="/contact">{ctas.requestAccess}</Btn>
+            <Btn variant="ghost" href="/login">{ctas.memberLogin}</Btn>
           </div>
           <p className="mono muted text-[11.5px] tracking-wide">{home.trustLine}</p>
         </div>
@@ -90,8 +97,8 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
             <img src={heroImage as string} alt="Trader analyzing live market charts" className="size-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg)] via-transparent to-transparent" />
             <Panel className="absolute bottom-4 left-4 right-4 p-3">
-              <p className="mono text-[10px] uppercase tracking-wider text-yellow">Live curriculum preview</p>
-              <p className="text-sm font-semibold">Price Action Mastery · Module 3</p>
+              <p className="mono text-[10px] uppercase tracking-wider text-yellow">{home.heroPreview?.label ?? 'Live curriculum preview'}</p>
+              <p className="text-sm font-semibold">{home.heroPreview?.title ?? 'Price Action Mastery · Module 3'}</p>
             </Panel>
           </div>
         )}
@@ -110,8 +117,8 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
 
       <section className="mkt-section">
         <div className="mkt-section-head">
-          <Eyebrow className="mb-3.5">Why Trading Cube</Eyebrow>
-          <h2 className="h2 text-[26px] leading-snug">Most trading education stops at theory. Ours stops at proof.</h2>
+          <Eyebrow className="mb-3.5">{sections.pillars.eyebrow}</Eyebrow>
+          <h2 className="h2 text-[26px] leading-snug">{sections.pillars.headline}</h2>
         </div>
         <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-3">
           {data.pillars.map((p, i) => (
@@ -133,8 +140,8 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
 
       <section className="mkt-section" id="mkt-curriculum">
         <div className="mkt-section-head">
-          <Eyebrow className="mb-3.5">Curriculum</Eyebrow>
-          <h2 className="h2 text-[26px]">Six courses. One sequence.</h2>
+          <Eyebrow className="mb-3.5">{sections.curriculum.eyebrow}</Eyebrow>
+          <h2 className="h2 text-[26px]">{sections.curriculum.headline}</h2>
         </div>
         <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-3">
           {data.courses.map((course) => (
@@ -158,9 +165,9 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
 
       <section className="video-marquee-section">
         <div className="video-marquee-head">
-          <Eyebrow className="mb-3.5">Inside the Curriculum</Eyebrow>
-          <h2 className="h2 text-[26px]">A look at the actual lessons.</h2>
-          <p className="muted mt-3 text-[13.5px]">Unlisted YouTube lessons, streamed straight from the platform — hover to pause.</p>
+          <Eyebrow className="mb-3.5">{sections.videos.eyebrow}</Eyebrow>
+          <h2 className="h2 text-[26px]">{sections.videos.headline}</h2>
+          <p className="muted mt-3 text-[13.5px]">{sections.videos.description}</p>
         </div>
         <div className="video-marquee-wrap">
           <div className="video-track">
@@ -182,8 +189,8 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
 
       <section className="mkt-section" id="mkt-how">
         <div className="mkt-section-head">
-          <Eyebrow className="mb-3.5">How It Works</Eyebrow>
-          <h2 className="h2 text-[26px]">From application to certificate.</h2>
+          <Eyebrow className="mb-3.5">{sections.howItWorks.eyebrow}</Eyebrow>
+          <h2 className="h2 text-[26px]">{sections.howItWorks.headline}</h2>
         </div>
         <div className="step-row mx-auto max-w-5xl">
           {data.steps.map((step) => (
@@ -198,8 +205,8 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
 
       <section className="mkt-section" id="mkt-results">
         <div className="mkt-section-head">
-          <Eyebrow className="mb-3.5">Results</Eyebrow>
-          <h2 className="h2 text-[26px]">Traders who finished the sequence.</h2>
+          <Eyebrow className="mb-3.5">{sections.results.eyebrow}</Eyebrow>
+          <h2 className="h2 text-[26px]">{sections.results.headline}</h2>
         </div>
         <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-3">
           {data.testimonials.map((t) => (
@@ -219,8 +226,8 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
 
       <section className="mkt-section mx-auto max-w-[760px]" id="mkt-faq">
         <div className="mkt-section-head mb-2">
-          <Eyebrow className="mb-3.5">Frequently Asked</Eyebrow>
-          <h2 className="h2 text-[26px]">Before you request access.</h2>
+          <Eyebrow className="mb-3.5">{sections.faq.eyebrow}</Eyebrow>
+          <h2 className="h2 text-[26px]">{sections.faq.headline}</h2>
         </div>
         <FaqSection items={data.faqs} />
       </section>
@@ -233,9 +240,11 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
           </>
         )}
         <div className="relative z-10">
-          <Eyebrow className="mb-4">Created by traders, for traders</Eyebrow>
-          <h2 className="h1 mb-6 text-[32px]">Ready to trade with <span className="grad-text">structure?</span></h2>
-          <Btn href="/contact">Request Access →</Btn>
+          <Eyebrow className="mb-4">{sections.cta.eyebrow}</Eyebrow>
+          <h2 className="h1 mb-6 text-[32px]">{sections.cta.headline?.includes('structure') ? (
+            <>Ready to trade with <span className="grad-text">structure?</span></>
+          ) : sections.cta.headline}</h2>
+          <Btn href="/contact">{sections.cta.buttonLabel ?? ctas.requestAccess}</Btn>
         </div>
       </section>
 
@@ -246,23 +255,23 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
             <p className="muted max-w-[260px] text-[13px] leading-relaxed">{settings.footer?.description}</p>
           </div>
           <div className="mkt-footer-col">
-            <h4>Curriculum</h4>
+            <h4>{settings.footer?.curriculumTitle ?? 'Curriculum'}</h4>
             {data.courses.slice(0, 4).map((c) => (
               <Link key={c.id} href="#mkt-curriculum">{c.title}</Link>
             ))}
           </div>
           <div className="mkt-footer-col">
-            <h4>Academy</h4>
+            <h4>{settings.footer?.academyTitle ?? 'Academy'}</h4>
             <Link href="/about">About</Link>
             <Link href="/method">Method</Link>
             <Link href="/resources">Resources</Link>
-            <Link href="/login">Member Login</Link>
+            <Link href="/login">{ctas.memberLogin}</Link>
           </div>
           <div className="mkt-footer-col">
-            <h4>Contact</h4>
+            <h4>{settings.footer?.contactTitle ?? 'Contact'}</h4>
             <a href={`mailto:${settings.footer?.email}`}>{settings.footer?.email}</a>
-            <a href={whatsappUrl(settings.footer?.whatsapp)} target="_blank" rel="noreferrer">WhatsApp the desk</a>
-            <Link href="/contact">Request access</Link>
+            <a href={whatsappUrl(settings.footer?.whatsapp)} target="_blank" rel="noreferrer">{waLabel}</a>
+            <Link href="/contact">{settings.footer?.requestAccessLabel ?? 'Request access'}</Link>
           </div>
         </div>
       </footer>

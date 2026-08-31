@@ -47,6 +47,15 @@ Create a project at [supabase.com](https://supabase.com), then run:
 # supabase/seed.sql
 ```
 
+**Hosted Supabase:** run auth users first, then seed:
+
+```bash
+node scripts/seed-auth-users.mjs
+# Then run supabase/seed.sql in the SQL Editor (or psql)
+```
+
+If seed fails on student rows (`support_tickets_user_id_fkey`), your student profile UUID differs from the seed defaults. Re-run the tail of seed after auth setup, or paste `supabase/snippets/seed-student-data.sql` in the SQL Editor.
+
 Then sync CMS content and integration rows:
 
 ```bash
@@ -94,9 +103,9 @@ After running `seed.sql`:
 | Role    | Email                    | Password           |
 |---------|--------------------------|--------------------|
 | Admin   | admin@thetradingcube.com | TradingCube2026!   |
-| Student | student@thetradingcube.com or m.harrison@email.com | TradingCube2026!   |
+| Student | student@thetradingcube.com | TradingCube2026!   |
 
-If login fails after `seed.sql`, run **`node scripts/seed-auth-users.mjs`** — it resets passwords via the Supabase Admin API (required for hosted projects).
+Run **`node scripts/seed-auth-users.mjs`** before or after `seed.sql` on hosted Supabase — it creates/resets auth users and profiles via the Admin API (required when raw `auth.users` inserts are skipped).
 
 **Change these passwords before production deployment.**
 

@@ -147,7 +147,13 @@ git remote add upstream https://github.com/roosevelt-jpg/trading-cube-academy.gi
 git push upstream main --force-with-lease
 ```
 
-Alternatively, connect GitHub in [Cursor Integrations](https://cursor.com/dashboard?tab=integrations) with write access to the repo, then ask a cloud agent to push.
+Or with a GitHub personal access token (repo write scope):
+
+```bash
+GITHUB_TOKEN=ghp_xxx FORCE_PUSH=1 ./scripts/publish-to-github.sh
+```
+
+Alternatively, connect GitHub in [Cursor Integrations](https://cursor.com/dashboard?tab=integrations) with write access to the repo, add `GITHUB_TOKEN` to your Cloud Agent environment secrets, then ask a cloud agent to push.
 
 ### Vercel setup
 

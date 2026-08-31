@@ -8,7 +8,15 @@ import { getSupabaseEnv } from '@/lib/supabase/env'
 import { Btn, Eyebrow, Logo, Panel } from '@/components/ui/academy-ui'
 import type { SiteSettings } from '@/lib/types/database'
 
-export function AuthForm({ mode, settings }: { mode: 'login' | 'signup' | 'forgot'; settings?: SiteSettings | null }) {
+export function AuthForm({
+  mode,
+  settings,
+  initialMessage,
+}: {
+  mode: 'login' | 'signup' | 'forgot'
+  settings?: SiteSettings | null
+  initialMessage?: string
+}) {
   const router = useRouter()
   const configured = getSupabaseEnv().configured
   const bg = settings?.homepage?.heroImageUrl ?? (settings?.images as Record<string, string> | undefined)?.authBackground
@@ -16,7 +24,7 @@ export function AuthForm({ mode, settings }: { mode: 'login' | 'signup' | 'forgo
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState(initialMessage ?? '')
   const [busy, setBusy] = useState(false)
 
   const submit = async (e: FormEvent) => {
@@ -54,8 +62,14 @@ export function AuthForm({ mode, settings }: { mode: 'login' | 'signup' | 'forgo
     }
 
     const userId = result.data.user?.id
+    const metaRole = result.data.user?.user_metadata?.role as string | undefined
     const { data: profile } = await client.from('profiles').select('role').eq('id', userId ?? '').maybeSingle()
-    router.push(profile?.role === 'admin' ? '/admin' : '/student')
+    const role = profile?.role ?? metaRole
+    const dest = role === 'admin' ? '/admin' : '/student'
+
+    // Hard navigation ensures auth cookies are sent on the next request (server layouts read them).
+    router.refresh()
+    window.location.assign(dest)
   }
 
   const titles = { login: 'Welcome back.', signup: 'Create your account.', forgot: 'Reset your password.' }

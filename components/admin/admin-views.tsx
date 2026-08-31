@@ -8,6 +8,7 @@ import { Btn, Eyebrow, LoadingState, Panel, Pill, ProgressTrack } from '@/compon
 import { DEFAULT_PAGES } from '@/lib/defaults/cms-defaults'
 import type { ActivityEvent, Course, PageContent, Profile, SiteSettings, SupportTicket, Testimonial } from '@/lib/types/database'
 import { formatRelativeDate, tierLabel } from '@/lib/utils/site'
+import { formatDateTime } from '@/lib/utils/datetime'
 
 export function AdminDashboardView() {
   const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
@@ -44,7 +45,7 @@ export function AdminDashboardView() {
         {(data?.activity ?? []).map((ev) => (
           <div key={ev.id} className="flex justify-between border-b border-[var(--border-soft)] px-5 py-4 text-sm last:border-0">
             <span>{ev.title}</span>
-            <span className="mono muted">{formatRelativeDate(ev.created_at)}</span>
+            <span className="mono muted text-xs">{formatDateTime(ev.created_at)}</span>
           </div>
         ))}
       </Panel>
@@ -259,52 +260,117 @@ export function AdminVideoManager({ courseSlug }: { courseSlug: string }) {
 }
 
 export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
+  const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null)
+  const [passing, setPassing] = useState<number | null>(null)
+  const [attempts, setAttempts] = useState<number | null>(null)
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState<number | null>(null)
+
   const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
     const { data: course } = await client.from('courses').select('id,title').eq('slug', courseSlug).maybeSingle()
     if (!course) return null
     const { data: modules } = await client.from('modules').select('*').eq('course_id', course.id).order('sort_order')
-    const mod = modules?.[2] ?? modules?.[0]
-    if (!mod) return { course, module: null, questions: [], options: [] }
+    const mod = modules?.[0]
+    if (!mod) return { course, modules: modules ?? [], module: null, questions: [], options: [], settings: null }
     const [{ data: questions }, { data: options }, { data: settings }] = await Promise.all([
       client.from('quiz_questions').select('*').eq('module_id', mod.id).order('sort_order'),
       client.from('quiz_options').select('*'),
       client.from('module_quiz_settings').select('*').eq('module_id', mod.id).maybeSingle(),
     ])
-    return { course, module: mod, questions: questions ?? [], options: options ?? [], settings }
+    return { course, modules: modules ?? [], module: mod, questions: questions ?? [], options: options ?? [], settings }
   }, [courseSlug])
 
-  const { data, loading, reload } = useRealtimeQuery('quiz_questions', fetcher, [courseSlug])
-  const [passing, setPassing] = useState<number | null>(null)
+  const { data, loading, reload } = useRealtimeQuery('module_quiz_settings', fetcher, [courseSlug])
+
+  const activeModuleId = selectedModuleId ?? data?.module?.id ?? null
+
+  const moduleFetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+    if (!activeModuleId || !data?.course) return null
+    const [{ data: questions }, { data: options }, { data: settings }, { data: mod }] = await Promise.all([
+      client.from('quiz_questions').select('*').eq('module_id', activeModuleId).order('sort_order'),
+      client.from('quiz_options').select('*'),
+      client.from('module_quiz_settings').select('*').eq('module_id', activeModuleId).maybeSingle(),
+      client.from('modules').select('*').eq('id', activeModuleId).maybeSingle(),
+    ])
+    return { questions: questions ?? [], options: options ?? [], settings, module: mod }
+  }, [activeModuleId, data?.course])
+
+  const { data: moduleData, reload: reloadModule } = useRealtimeQuery('quiz_questions', moduleFetcher, [activeModuleId])
 
   if (loading) return <LoadingState />
-  if (!data?.module) return <div className="content-pad">No modules found.</div>
+  if (!data?.course) return <div className="content-pad">Course not found.</div>
+  if (!data.modules.length) return <div className="content-pad">No modules found.</div>
+
+  const mod = moduleData?.module ?? data.module
+  const questions = moduleData?.questions ?? data.questions
+  const settings = moduleData?.settings ?? data.settings
 
   const saveSettings = async () => {
-    const score = passing ?? data.settings?.passing_score ?? 70
-    await createClient().from('module_quiz_settings').upsert({ module_id: data.module.id, passing_score: score, attempts_allowed: 3 })
+    if (!mod) return
+    const score = passing ?? settings?.passing_score ?? 70
+    const allowed = attempts ?? settings?.attempts_allowed ?? 3
+    const mins = timeLimitMinutes ?? (settings?.time_limit_seconds ? Math.round(settings.time_limit_seconds / 60) : null)
+    const time_limit_seconds = mins && mins > 0 ? mins * 60 : null
+    await createClient().from('module_quiz_settings').upsert({
+      module_id: mod.id,
+      passing_score: score,
+      attempts_allowed: allowed,
+      time_limit_seconds,
+      question_order: settings?.question_order ?? 'sequential',
+    })
+    setPassing(null)
+    setAttempts(null)
+    setTimeLimitMinutes(null)
     reload()
+    reloadModule()
   }
+
+  const currentTimeMins = timeLimitMinutes ?? (settings?.time_limit_seconds ? Math.round(settings.time_limit_seconds / 60) : 0)
 
   return (
     <div className="content-pad max-w-2xl">
       <Link href={`/admin/courses/${courseSlug}`} className="mono muted text-xs">← {data.course.title}</Link>
-      <div className="mt-4 flex items-center justify-between">
-        <Eyebrow>Quiz builder · {data.module.title}</Eyebrow>
-        <Btn size="sm" onClick={saveSettings}>Save Quiz</Btn>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+        <Eyebrow>Quiz & examination settings</Eyebrow>
+        <Btn size="sm" onClick={saveSettings}>Save settings</Btn>
       </div>
+
       <Panel className="mt-6 space-y-4 p-6">
         <div className="input-group">
+          <label>Module</label>
+          <select
+            className="input"
+            value={activeModuleId ?? ''}
+            onChange={(e) => setSelectedModuleId(e.target.value)}
+          >
+            {data.modules.map((m: { id: string; title: string }) => (
+              <option key={m.id} value={m.id}>{m.title}</option>
+            ))}
+          </select>
+        </div>
+        <div className="input-group">
           <label>Passing score (%)</label>
-          <input className="input" type="number" defaultValue={data.settings?.passing_score ?? 70} onChange={(e) => setPassing(Number(e.target.value))} />
+          <input className="input" type="number" min={1} max={100} defaultValue={settings?.passing_score ?? 70} onChange={(e) => setPassing(Number(e.target.value))} />
+        </div>
+        <div className="input-group">
+          <label>Attempts allowed</label>
+          <input className="input" type="number" min={1} max={10} defaultValue={settings?.attempts_allowed ?? 3} onChange={(e) => setAttempts(Number(e.target.value))} />
+        </div>
+        <div className="input-group">
+          <label>Time limit (minutes)</label>
+          <input className="input" type="number" min={0} placeholder="0 = no timer" defaultValue={currentTimeMins || ''} onChange={(e) => setTimeLimitMinutes(Number(e.target.value))} />
+          <p className="muted mt-1 text-xs">Students see a server-synced countdown. At zero the quiz auto-submits.</p>
         </div>
       </Panel>
-      <div className="mt-6 space-y-3">
-        {data.questions.map((q: any, i: number) => (
+
+      <Eyebrow className="mt-8 mb-4">Questions ({questions.length})</Eyebrow>
+      <div className="space-y-3">
+        {questions.map((q: { id: string; question: string }, i: number) => (
           <Panel key={q.id} className="p-4">
             <p className="mono muted mb-2 text-xs">Question {i + 1}</p>
             <p className="text-sm">{q.question}</p>
           </Panel>
         ))}
+        {!questions.length && <p className="muted text-sm">No questions for this module yet.</p>}
       </div>
     </div>
   )
@@ -404,6 +470,7 @@ export function AdminSupportView() {
               <div>
                 <p className="font-semibold">{t.subject}</p>
                 <p className="muted mt-1 text-sm">{t.student_name} · {t.message}</p>
+                <p className="mono muted mt-2 text-[11px]">{formatDateTime(t.created_at)}</p>
               </div>
               <div className="flex items-center gap-2">
                 <Pill tone={t.status === 'open' ? 'yellow' : 'green'}>{t.status}</Pill>

@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRealtimeQuery } from '@/lib/hooks/use-realtime-query'
 import { Btn, Eyebrow, LoadingState, Panel, Pill, ProgressTrack } from '@/components/ui/academy-ui'
 import type { ActivityEvent, Course, Enrollment, Lesson, LessonProgress, Profile } from '@/lib/types/database'
-import { formatRelativeDate } from '@/lib/utils/site'
+import { formatDateTime } from '@/lib/utils/datetime'
 
 type DashboardData = {
   enrollments: (Enrollment & { course: Course })[]
@@ -89,7 +89,7 @@ export function StudentDashboard({ profile }: { profile: Profile }) {
         {data.activity.map((ev) => (
           <div key={ev.id} className="flex justify-between px-5 py-4 text-sm">
             <span>{ev.title}</span>
-            <span className="mono muted">{formatRelativeDate(ev.created_at)}</span>
+            <span className="mono muted text-xs">{formatDateTime(ev.created_at)}</span>
           </div>
         ))}
       </Panel>

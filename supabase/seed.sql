@@ -192,8 +192,9 @@ insert into public.lessons (id, module_id, slug, title, lesson_type, content, yo
 ('l0030001-0000-4000-8000-000000000011', 'm0030001-0000-4000-8000-000000000002', 'intro-trend', 'Trend Identification', 'video', '{}'::jsonb, 'dQw4w9WgXcQ', '9:00', 0, true);
 
 -- Quiz settings & questions for Module 3
-insert into public.module_quiz_settings (module_id, passing_score, attempts_allowed, question_order) values
-('m0030001-0000-4000-8000-000000000003', 70, 3, 'sequential');
+insert into public.module_quiz_settings (module_id, passing_score, attempts_allowed, question_order, time_limit_seconds) values
+('m0030001-0000-4000-8000-000000000003', 70, 3, 'sequential', 1800)
+on conflict (module_id) do update set time_limit_seconds = excluded.time_limit_seconds;
 
 insert into public.quiz_questions (id, module_id, question, sort_order) values
 ('q0030001-0000-4000-8000-000000000001', 'm0030001-0000-4000-8000-000000000003', 'What defines a horizontal S/R level?', 0),
@@ -252,6 +253,14 @@ insert into public.activity_events (event_type, title, meta) values
 ('lesson_complete', 'Marcus Harrison completed Module 3 · Lesson 3', '{"user_id":"a0000000-0000-4000-8000-000000000002","lesson_id":"l0030001-0000-4000-8000-000000000003"}'::jsonb),
 ('course_complete', 'Priya N. completed Risk Management Fundamentals', '{"score":96}'::jsonb);
 
--- Support ticket sample
-insert into public.support_tickets (user_id, student_name, subject, message, channel, status) values
+-- Integration API placeholders (admin fills secrets in dashboard)
+insert into public.integration_settings (provider, label, enabled, public_value) values
+('stripe', 'Stripe Payments', false, '{"publishable_key":""}'::jsonb),
+('youtube', 'YouTube Data API', false, '{}'::jsonb),
+('blob', 'Vercel Blob Storage', false, '{}'::jsonb),
+('email', 'Transactional Email', false, '{"provider_name":"resend","from_address":"support@thetradingcube.com"}'::jsonb),
+('whatsapp', 'WhatsApp Business API', false, '{"phone_number_id":""}'::jsonb),
+('openai', 'OpenAI (optional)', false, '{"model":"gpt-4o-mini"}'::jsonb)
+on conflict (provider) do update set label = excluded.label;
+
 ('a0000000-0000-4000-8000-000000000002', 'Marcus Harrison', 'Quiz retry question', 'Can I review my incorrect answers from the Module 2 quiz?', 'email', 'open');

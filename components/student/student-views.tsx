@@ -1,11 +1,13 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useRealtimeQuery } from '@/lib/hooks/use-realtime-query'
+import { useQuizTimer } from '@/lib/hooks/use-quiz-timer'
 import { Btn, Candles, Eyebrow, HelpBlock, LoadingState, Panel, Pill, ProgressTrack } from '@/components/ui/academy-ui'
-import type { Course, Lesson, Module, ModuleProgress, Profile, SiteSettings } from '@/lib/types/database'
+import { formatDateTime } from '@/lib/utils/datetime'
+import type { Course, Lesson, Module, ModuleProgress, Profile, QuizAttempt, SiteSettings } from '@/lib/types/database'
 
 export function StudentCourseView({ profile, courseSlug }: { profile: Profile; courseSlug: string }) {
   const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
@@ -195,58 +197,160 @@ export function StudentLessonView({ profile, courseSlug, lessonSlug, settings }:
 
 export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: Profile; courseSlug: string; moduleSlug: string }) {
   const [answers, setAnswers] = useState<Record<string, string>>({})
-  const [result, setResult] = useState<{ score: number; passed: boolean; id: string } | null>(null)
+  const [result, setResult] = useState<{ score: number; passed: boolean; id: string; timedOut?: boolean; completedAt?: string } | null>(null)
   const [qIndex, setQIndex] = useState(0)
+  const [attempt, setAttempt] = useState<QuizAttempt | null>(null)
+  const [starting, setStarting] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [phase, setPhase] = useState<'intro' | 'active' | 'result'>('intro')
 
   const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
     const { data: course } = await client.from('courses').select('id').eq('slug', courseSlug).maybeSingle()
     const { data: mod } = await client.from('modules').select('id,title').eq('course_id', course?.id).eq('slug', moduleSlug).maybeSingle()
     if (!mod) return null
-    const [{ data: questions }, { data: options }, { data: settings }] = await Promise.all([
+    const [{ data: questions }, { data: options }, { data: settings }, { data: priorAttempts }] = await Promise.all([
       client.from('quiz_questions').select('*').eq('module_id', mod.id).order('sort_order'),
       client.from('quiz_options').select('*').order('sort_order'),
       client.from('module_quiz_settings').select('*').eq('module_id', mod.id).maybeSingle(),
+      client.from('quiz_attempts').select('*').eq('user_id', profile.id).eq('module_id', mod.id).order('created_at', { ascending: false }),
     ])
-    const optByQ = (options ?? []).reduce((acc: Record<string, typeof options>, o: any) => {
+    const optByQ = (options ?? []).reduce((acc: Record<string, typeof options>, o: { question_id: string }) => {
       acc[o.question_id] = [...(acc[o.question_id] ?? []), o]
       return acc
     }, {})
-    return { module: mod, questions: questions ?? [], optByQ, passing: settings?.passing_score ?? 70 }
-  }, [courseSlug, moduleSlug])
+    const completed = (priorAttempts ?? []).filter((a: QuizAttempt) => a.status !== 'in_progress')
+    const inProgress = (priorAttempts ?? []).find((a: QuizAttempt) => a.status === 'in_progress') as QuizAttempt | undefined
+    return {
+      module: mod,
+      questions: questions ?? [],
+      optByQ,
+      passing: settings?.passing_score ?? 70,
+      attemptsAllowed: settings?.attempts_allowed ?? 3,
+      timeLimitSeconds: settings?.time_limit_seconds ?? null,
+      attemptsUsed: completed.length,
+      inProgressAttempt: inProgress ?? null,
+    }
+  }, [courseSlug, moduleSlug, profile.id])
 
-  const { data, loading } = useRealtimeQuery('quiz_questions', fetcher, [courseSlug, moduleSlug])
+  const { data, loading, reload } = useRealtimeQuery('quiz_questions', fetcher, [courseSlug, moduleSlug, profile.id])
+
+  const submitQuiz = useCallback(async (timedOut = false) => {
+    if (!data || !attempt || submitting) return
+    setSubmitting(true)
+    try {
+      const res = await fetch('/api/quiz/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attemptId: attempt.id, answers, timedOut }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Submit failed')
+      const a = json.attempt
+      setResult({
+        score: a.score,
+        passed: a.passed,
+        id: a.id,
+        timedOut: a.timed_out,
+        completedAt: a.completed_at,
+      })
+      setPhase('result')
+      reload()
+    } finally {
+      setSubmitting(false)
+    }
+  }, [answers, attempt, data, reload, submitting])
+
+  const handleExpire = useCallback(() => {
+    submitQuiz(true)
+  }, [submitQuiz])
+
+  const { formatted: timerDisplay, urgent, synced } = useQuizTimer(
+    phase === 'active' && attempt?.expires_at ? attempt.expires_at : null,
+    handleExpire,
+  )
+
+  const startQuiz = async () => {
+    if (!data?.module) return
+    setStarting(true)
+    try {
+      const res = await fetch('/api/quiz/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ moduleId: data.module.id }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Could not start quiz')
+      setAttempt(json.attempt as QuizAttempt)
+      setAnswers({})
+      setQIndex(0)
+      setPhase('active')
+    } finally {
+      setStarting(false)
+    }
+  }
+
   if (loading) return <LoadingState />
   if (!data || !data.questions.length) return <div className="content-pad">No quiz configured.</div>
 
+  const attemptsRemaining = Math.max(0, data.attemptsAllowed - data.attemptsUsed)
   const question = data.questions[qIndex]
-  const opts = data.optByQ[question.id] ?? []
+  const opts = data.optByQ[question?.id] ?? []
 
-  const submitQuiz = async () => {
-    let correct = 0
-    for (const q of data.questions) {
-      const selected = answers[q.id]
-      const right = (data.optByQ[q.id] ?? []).find((o: any) => o.is_correct)
-      if (selected === right?.id) correct++
-    }
-    const score = Math.round((correct / data.questions.length) * 100)
-    const passed = score >= data.passing
-    const client = createClient()
-    const { data: attempt } = await client.from('quiz_attempts').insert({ user_id: profile.id, module_id: data.module.id, score, passed, answers, attempt_number: 1 }).select('id').single()
-    if (passed) {
-      await client.from('module_progress').upsert({ user_id: profile.id, module_id: data.module.id, completed: true, progress_pct: 100, completed_at: new Date().toISOString() }, { onConflict: 'user_id,module_id' })
-    }
-    setResult({ score, passed, id: attempt?.id ?? '' })
-  }
-
-  if (result) {
+  if (result || phase === 'result') {
     return (
       <div className="auth-wrap bg-grid items-start pt-16">
         <div className="w-full max-w-[640px]">
           <Panel className="mb-6 p-10 text-center">
-            <Pill tone={result.passed ? 'green' : 'red'} className="mb-4">{result.passed ? 'Passed' : 'Not passed'}</Pill>
-            <p className="h1 mono text-[52px]" style={{ color: result.passed ? 'var(--green)' : 'var(--red)' }}>{result.score}%</p>
-            <p className="muted mb-6 text-[13px]">Passing score is {data.passing}%</p>
-            <Btn href={`/student/courses/${courseSlug}`}>{result.passed ? 'Continue to next module →' : 'Review course'}</Btn>
+            <Pill tone={result?.passed ? 'green' : 'red'} className="mb-4">
+              {result?.timedOut ? 'Time expired' : result?.passed ? 'Passed' : 'Not passed'}
+            </Pill>
+            <p className="h1 mono text-[52px]" style={{ color: result?.passed ? 'var(--green)' : 'var(--red)' }}>{result?.score}%</p>
+            <p className="muted mb-2 text-[13px]">Passing score is {data.passing}%</p>
+            {result?.completedAt && (
+              <p className="mono muted mb-6 text-[11px]">Submitted {formatDateTime(result.completedAt)}</p>
+            )}
+            <Btn href={`/student/courses/${courseSlug}`}>{result?.passed ? 'Continue to next module →' : 'Review course'}</Btn>
+          </Panel>
+        </div>
+      </div>
+    )
+  }
+
+  if (phase === 'intro') {
+    return (
+      <div className="auth-wrap bg-grid items-start pt-16">
+        <div className="w-full max-w-[640px]">
+          <Eyebrow className="mb-2">{data.module.title} · Examination</Eyebrow>
+          <Panel className="space-y-4 p-8">
+            <h1 className="h2 text-xl">Before you begin</h1>
+            <ul className="muted space-y-2 text-sm">
+              <li>{data.questions.length} questions · passing score {data.passing}%</li>
+              <li>{attemptsRemaining} attempt{attemptsRemaining === 1 ? '' : 's'} remaining</li>
+              {data.timeLimitSeconds ? (
+                <li>Time limit: {Math.round(data.timeLimitSeconds / 60)} minutes (server-synced timer)</li>
+              ) : (
+                <li>No time limit</li>
+              )}
+            </ul>
+            {data.inProgressAttempt && (
+              <p className="text-sm text-yellow">You have an in-progress attempt — resume below.</p>
+            )}
+            <Btn
+              onClick={() => {
+                if (data.inProgressAttempt) {
+                  setAttempt(data.inProgressAttempt)
+                  setPhase('active')
+                } else {
+                  startQuiz()
+                }
+              }}
+              disabled={starting || attemptsRemaining === 0}
+            >
+              {starting ? 'Starting…' : data.inProgressAttempt ? 'Resume quiz' : 'Start quiz'}
+            </Btn>
+            {attemptsRemaining === 0 && (
+              <p className="text-sm text-red">No attempts remaining. Contact support if you need a reset.</p>
+            )}
           </Panel>
         </div>
       </div>
@@ -256,14 +360,21 @@ export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: 
   return (
     <div className="auth-wrap bg-grid items-start pt-16">
       <div className="w-full max-w-[640px]">
-        <div className="mb-4 flex justify-between">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <Eyebrow>{data.module.title} Quiz</Eyebrow>
-          <span className="mono muted text-xs">Question {qIndex + 1} of {data.questions.length}</span>
+          <div className="flex items-center gap-4">
+            {data.timeLimitSeconds && attempt?.expires_at && (
+              <span className={`mono text-sm font-medium ${urgent ? 'text-red' : 'text-yellow'}`} aria-live="polite">
+                ⏱ {timerDisplay}{!synced ? ' …' : ''}
+              </span>
+            )}
+            <span className="mono muted text-xs">Question {qIndex + 1} of {data.questions.length}</span>
+          </div>
         </div>
         <Panel className="p-8">
           <h2 className="h2 mb-6 text-lg leading-snug">{question.question}</h2>
           <div className="space-y-3">
-            {opts.map((o: any) => (
+            {opts.map((o: { id: string; option_text: string }) => (
               <label key={o.id} className={`panel panel-sm flex cursor-pointer items-center gap-3.5 p-4 ${answers[question.id] === o.id ? 'border-yellow' : ''}`}>
                 <input type="radio" name={question.id} checked={answers[question.id] === o.id} onChange={() => setAnswers({ ...answers, [question.id]: o.id })} className="accent-yellow" />
                 <span className="text-sm">{o.option_text}</span>
@@ -276,7 +387,9 @@ export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: 
           {qIndex < data.questions.length - 1 ? (
             <Btn size="sm" onClick={() => setQIndex(qIndex + 1)} disabled={!answers[question.id]}>Next Question →</Btn>
           ) : (
-            <Btn size="sm" onClick={submitQuiz} disabled={Object.keys(answers).length < data.questions.length}>Submit Quiz</Btn>
+            <Btn size="sm" onClick={() => submitQuiz(false)} disabled={submitting || Object.keys(answers).length < data.questions.length}>
+              {submitting ? 'Submitting…' : 'Submit Quiz'}
+            </Btn>
           )}
         </div>
       </div>
@@ -348,9 +461,12 @@ export function StudentSupportView({ profile }: { profile: Profile }) {
       </Panel>
       <Eyebrow className="mt-8 mb-4">Your tickets</Eyebrow>
       <div className="space-y-3">
-        {(tickets ?? []).map((t: any) => (
-          <Panel key={t.id} className="flex justify-between p-4 text-sm">
-            <span>{t.subject}</span>
+        {(tickets ?? []).map((t: { id: string; subject: string; status: string; created_at: string }) => (
+          <Panel key={t.id} className="flex flex-wrap items-center justify-between gap-2 p-4 text-sm">
+            <div>
+              <span>{t.subject}</span>
+              <p className="mono muted mt-1 text-[11px]">{formatDateTime(t.created_at)}</p>
+            </div>
             <Pill tone={t.status === 'open' ? 'yellow' : 'green'}>{t.status}</Pill>
           </Panel>
         ))}

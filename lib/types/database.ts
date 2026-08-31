@@ -97,9 +97,39 @@ export type PageContent = {
 export type Enrollment = { user_id: string; course_id: string; progress_pct: number; enrolled_at: string }
 export type LessonProgress = { id: string; user_id: string; lesson_id: string; completed: boolean; progress_pct: number }
 export type ModuleProgress = { id: string; user_id: string; module_id: string; completed: boolean; progress_pct: number }
-export type QuizQuestion = { id: string; module_id: string; question: string; sort_order: number }
+export type ModuleQuizSettings = {
+  module_id: string
+  passing_score: number
+  attempts_allowed: number
+  question_order: string
+  time_limit_seconds?: number | null
+}
+
+export type IntegrationSetting = {
+  id: string
+  provider: string
+  label: string
+  enabled: boolean
+  public_value: Record<string, string>
+  secret_value?: string | null
+  updated_at: string
+}
 export type QuizOption = { id: string; question_id: string; option_text: string; is_correct: boolean; sort_order: number }
-export type QuizAttempt = { id: string; user_id: string; module_id: string; score: number; passed: boolean; attempt_number: number; answers: Record<string, string> }
+export type QuizAttempt = {
+  id: string
+  user_id: string
+  module_id: string
+  score: number
+  passed: boolean
+  attempt_number: number
+  answers: Record<string, string>
+  started_at?: string | null
+  expires_at?: string | null
+  completed_at?: string | null
+  timed_out?: boolean
+  status?: 'in_progress' | 'completed' | 'timed_out'
+  created_at?: string
+}
 export type Certificate = { id: string; user_id: string; course_id: string; certificate_code: string; issued_at: string }
 export type SupportTicket = { id: string; user_id: string | null; student_name: string | null; subject: string; message: string; channel: string; status: 'open' | 'closed'; created_at: string }
 export type ActivityEvent = { id: string; event_type: string; title: string; meta: Record<string, unknown>; created_at: string }

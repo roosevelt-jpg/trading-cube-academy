@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Avatar, Btn, Logo } from '@/components/ui/academy-ui'
+import { LiveClock } from '@/components/ui/live-clock'
 import type { Profile, SiteSettings } from '@/lib/types/database'
 import { cn } from '@/lib/utils'
 
@@ -57,6 +58,7 @@ export function StudentShell({
               <p className="h2 text-xl">{profile.full_name}</p>
             </div>
           </div>
+          <LiveClock className="mono muted text-xs" />
         </div>
         {children}
       </div>
@@ -81,6 +83,7 @@ export function AdminShell({
     { href: '/admin/courses', label: '▤ Courses' },
     { href: '/admin/students', label: '☺ Students' },
     { href: '/admin/support', label: '✉ Support' },
+    { href: '/admin/integrations', label: '⎈ Integrations' },
     { href: '/admin/settings', label: '⚙ Settings' },
   ]
 
@@ -107,6 +110,7 @@ export function AdminShell({
       <div className="min-w-0">
         <div className="topbar">
           <p className="mono muted text-xs">Signed in as {profile.email}</p>
+          <LiveClock className="mono muted text-xs" />
         </div>
         {children}
       </div>

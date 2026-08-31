@@ -37,6 +37,27 @@ insert into auth.users (
 )
 on conflict (id) do nothing;
 
+-- Required for email/password sign-in (GoTrue looks up auth.identities)
+insert into auth.identities (id, user_id, identity_data, provider, provider_id, last_sign_in_at, created_at, updated_at)
+values
+(
+  'a0000000-0000-4000-8000-000000000001',
+  'a0000000-0000-4000-8000-000000000001',
+  '{"sub":"a0000000-0000-4000-8000-000000000001","email":"admin@thetradingcube.com"}'::jsonb,
+  'email',
+  'a0000000-0000-4000-8000-000000000001',
+  now(), now(), now()
+),
+(
+  'a0000000-0000-4000-8000-000000000002',
+  'a0000000-0000-4000-8000-000000000002',
+  '{"sub":"a0000000-0000-4000-8000-000000000002","email":"m.harrison@email.com"}'::jsonb,
+  'email',
+  'a0000000-0000-4000-8000-000000000002',
+  now(), now(), now()
+)
+on conflict (id) do nothing;
+
 insert into public.profiles (id, email, full_name, role, status, avatar_initials, last_active_at)
 values
   ('a0000000-0000-4000-8000-000000000001', 'admin@thetradingcube.com', 'Academy Admin', 'admin', 'active', 'AA', now()),

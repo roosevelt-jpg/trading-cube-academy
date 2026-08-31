@@ -490,6 +490,7 @@ export function StudentCertificateView({ profile, courseSlug }: { profile: Profi
   return (
     <div className="auth-wrap bg-grid">
       <Panel className="max-w-2xl border-yellow p-16 text-center">
+        <div className="mb-8 flex justify-center"><Logo variant="icon" href={false} /></div>
         <Eyebrow className="mb-5">Certificate of Completion</Eyebrow>
         <p className="muted text-[13px]">This certifies that</p>
         <p className="h1 my-4 text-4xl">{profile.full_name}</p>

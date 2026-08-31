@@ -13,7 +13,7 @@ import { formatDateTime } from '@/lib/utils/datetime'
 import type { AdminDashboardData } from '@/lib/data/server-dashboard'
 
 export function AdminDashboardView({ initialData }: { initialData?: AdminDashboardData }) {
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const [{ data: courses }, { data: students }, { data: tickets }, { data: activity }] = await Promise.all([
       client.from('courses').select('*').order('sort_order'),
       client.from('profiles').select('*').eq('role', 'student'),
@@ -57,7 +57,7 @@ export function AdminDashboardView({ initialData }: { initialData?: AdminDashboa
 }
 
 export function AdminCoursesView({ initialCourses }: { initialCourses?: Course[] }) {
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data } = await client.from('courses').select('*').order('sort_order')
     return (data ?? []) as Course[]
   }, [])
@@ -97,7 +97,9 @@ export function AdminCoursesView({ initialCourses }: { initialCourses?: Course[]
 
 export function AdminCourseDetailView({ courseSlug }: { courseSlug: string }) {
   const [title, setTitle] = useState('')
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const [description, setDescription] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data: course } = await client.from('courses').select('*').eq('slug', courseSlug).maybeSingle()
     if (!course) return null
     const { data: modules } = await client.from('modules').select('*').eq('course_id', course.id).order('sort_order')
@@ -110,7 +112,12 @@ export function AdminCourseDetailView({ courseSlug }: { courseSlug: string }) {
 
   const saveCourse = async () => {
     const client = createClient()
-    await client.from('courses').update({ title: title || data.course.title, updated_at: new Date().toISOString() }).eq('id', data.course.id)
+    await client.from('courses').update({
+      title: title || data.course.title,
+      description: description || data.course.description,
+      image_url: imageUrl || data.course.image_url,
+      updated_at: new Date().toISOString(),
+    }).eq('id', data.course.id)
     reload()
   }
 
@@ -118,10 +125,15 @@ export function AdminCourseDetailView({ courseSlug }: { courseSlug: string }) {
     <div className="content-pad">
       <Link href="/admin/courses" className="mono muted text-xs hover:text-yellow">← All courses</Link>
       <Eyebrow className="mt-4 mb-2">Editing — {data.course.title} · Modules</Eyebrow>
-      <div className="mb-6 flex gap-3">
-        <input className="input max-w-md" defaultValue={data.course.title} onChange={(e) => setTitle(e.target.value)} />
-        <Btn size="sm" onClick={saveCourse}>Save course</Btn>
-      </div>
+      <Panel className="mb-6 space-y-4 p-5">
+        <div className="input-group"><label>Course title</label><input className="input" defaultValue={data.course.title} onChange={(e) => setTitle(e.target.value)} /></div>
+        <div className="input-group"><label>Card description</label><textarea className="input min-h-[80px]" defaultValue={data.course.description ?? ''} onChange={(e) => setDescription(e.target.value)} /></div>
+        <div className="input-group"><label>Card image URL</label><input className="input" defaultValue={data.course.image_url ?? ''} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://images.unsplash.com/..." /></div>
+        {(imageUrl || data.course.image_url) && (
+          <img src={imageUrl || data.course.image_url || ''} alt="Course card preview" className="h-36 w-full max-w-sm object-cover" />
+        )}
+        <Btn size="sm" onClick={saveCourse}>Save course details</Btn>
+      </Panel>
       <div className="space-y-3">
         {data.modules.map((mod: any, i: number) => (
           <Panel key={mod.id} className="flex items-center gap-4 p-4">
@@ -137,7 +149,7 @@ export function AdminCourseDetailView({ courseSlug }: { courseSlug: string }) {
 }
 
 export function AdminContentEditor({ courseSlug, moduleSlug }: { courseSlug: string; moduleSlug?: string }) {
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data: course } = await client.from('courses').select('id,title,slug').eq('slug', courseSlug).maybeSingle()
     if (!course) return null
     let mod = null
@@ -212,7 +224,7 @@ export function AdminContentEditor({ courseSlug, moduleSlug }: { courseSlug: str
 }
 
 export function AdminVideoManager({ courseSlug }: { courseSlug: string }) {
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data: course } = await client.from('courses').select('id,title').eq('slug', courseSlug).maybeSingle()
     const { data: videos } = await client.from('youtube_videos').select('*').order('sort_order')
     const { data: lessons } = course ? await client.from('lessons').select('id,title,youtube_video_id,module_id, modules!inner(course_id)').eq('modules.course_id', course.id) : { data: [] }
@@ -269,7 +281,7 @@ export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
   const [attempts, setAttempts] = useState<number | null>(null)
   const [timeLimitMinutes, setTimeLimitMinutes] = useState<number | null>(null)
 
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data: course } = await client.from('courses').select('id,title').eq('slug', courseSlug).maybeSingle()
     if (!course) return null
     const { data: modules } = await client.from('modules').select('*').eq('course_id', course.id).order('sort_order')
@@ -287,7 +299,7 @@ export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
 
   const activeModuleId = selectedModuleId ?? data?.module?.id ?? null
 
-  const moduleFetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const moduleFetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     if (!activeModuleId || !data?.course) return null
     const [{ data: questions }, { data: options }, { data: settings }, { data: mod }] = await Promise.all([
       client.from('quiz_questions').select('*').eq('module_id', activeModuleId).order('sort_order'),
@@ -381,7 +393,7 @@ export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
 }
 
 export function AdminStudentsView() {
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data } = await client.from('profiles').select('*').eq('role', 'student').order('created_at', { ascending: false })
     return (data ?? []) as Profile[]
   }, [])
@@ -412,7 +424,7 @@ export function AdminStudentsView() {
 }
 
 export function AdminStudentDetailView({ studentId }: { studentId: string }) {
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data: profile } = await client.from('profiles').select('*').eq('id', studentId).maybeSingle()
     const { data: enrollments } = await client.from('enrollments').select('*, courses(title)').eq('user_id', studentId)
     return { profile: profile as Profile | null, enrollments: enrollments ?? [] }
@@ -450,7 +462,7 @@ export function AdminStudentDetailView({ studentId }: { studentId: string }) {
 }
 
 export function AdminSupportView() {
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data } = await client.from('support_tickets').select('*').order('created_at', { ascending: false })
     return (data ?? []) as SupportTicket[]
   }, [])
@@ -489,7 +501,7 @@ export function AdminSupportView() {
 }
 
 export function AdminPagesView() {
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data } = await client.from('page_contents').select('*').order('slug')
     return (data?.length ? data : Object.values(DEFAULT_PAGES)) as PageContent[]
   }, [])
@@ -517,7 +529,7 @@ export function AdminPagesView() {
 }
 
 export function AdminPageEditor({ slug }: { slug: string }) {
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data } = await client.from('page_contents').select('*').eq('slug', slug).maybeSingle()
     return (data ?? DEFAULT_PAGES[slug] ?? null) as PageContent | null
   }, [slug])
@@ -592,7 +604,7 @@ export function AdminPageEditor({ slug }: { slug: string }) {
 }
 
 export function AdminSettingsView({ initialSettings }: { initialSettings?: SiteSettings }) {
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data } = await client.from('site_settings').select('key,value')
     return Object.fromEntries((data ?? []).map((r: { key: string; value: unknown }) => [r.key, r.value])) as SiteSettings
   }, [])
@@ -652,9 +664,11 @@ export function AdminSettingsView({ initialSettings }: { initialSettings?: SiteS
         <Eyebrow>Homepage</Eyebrow>
         <div className="input-group"><label>Hero headline</label><input className="input" defaultValue={hp.headline} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, headline: e.target.value } })} /></div>
         <div className="input-group"><label>Hero description</label><textarea className="input min-h-[100px]" defaultValue={hp.description} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, description: e.target.value } })} /></div>
-        <div className="input-group"><label>Hero image URL</label><input className="input" defaultValue={hp.heroImageUrl} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, heroImageUrl: e.target.value } })} /></div>
-        <div className="input-group"><label>CTA band image URL</label><input className="input" defaultValue={hp.ctaImageUrl} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, ctaImageUrl: e.target.value } })} /></div>
+        <div className="input-group"><label>Hero image URL</label><input className="input" defaultValue={hp.heroImageUrl} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, heroImageUrl: e.target.value } })} placeholder="Trading charts / market desk photo" /></div>
+        <div className="input-group"><label>Hero terminal overlay URL</label><input className="input" defaultValue={hp.heroTerminalImageUrl} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, heroTerminalImageUrl: e.target.value } })} placeholder="Optional secondary hero image" /></div>
+        <div className="input-group"><label>CTA band image URL</label><input className="input" defaultValue={hp.ctaImageUrl} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, ctaImageUrl: e.target.value } })} placeholder="Trading floor / execution image" /></div>
         {hp.heroImageUrl && <img src={hp.heroImageUrl} alt="Hero preview" className="h-40 w-full object-cover" />}
+        <p className="muted text-xs">Use trading-industry photos (charts, terminals, risk dashboards). Changes sync live to the homepage and contact page.</p>
       </Panel>
 
       <Panel className="mt-6 space-y-4 p-6">
@@ -675,7 +689,7 @@ export function AdminSettingsView({ initialSettings }: { initialSettings?: SiteS
 }
 
 function CourseImageEditor({ onSave }: { onSave: (id: string, url: string) => void }) {
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data } = await client.from('courses').select('id,title,slug,image_url').order('sort_order')
     return data ?? []
   }, [])
@@ -697,7 +711,7 @@ function CourseImageEditor({ onSave }: { onSave: (id: string, url: string) => vo
 }
 
 function TestimonialImageEditor({ onSave }: { onSave: (id: string, url: string) => void }) {
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data } = await client.from('testimonials').select('id,author_name,image_url').order('sort_order')
     return (data ?? []) as Testimonial[]
   }, [])

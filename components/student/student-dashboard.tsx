@@ -106,7 +106,7 @@ export function StudentCoursesList({
   profile: Profile
   initialCourses?: (Course & { progress_pct: number })[]
 }) {
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const [{ data: enrollments }, { data: courses }] = await Promise.all([
       client.from('enrollments').select('*').eq('user_id', profile.id),
       client.from('courses').select('*').eq('published', true).order('sort_order'),
@@ -123,11 +123,16 @@ export function StudentCoursesList({
     <div className="content-pad">
       <Eyebrow>My Courses</Eyebrow>
       <h1 className="h1 mt-2 text-3xl">Your learning path</h1>
-      <div className="mt-8 space-y-4">
+      <div className="mt-8 grid gap-5 md:grid-cols-2">
         {(data ?? []).map((course) => (
           <Link key={course.id} href={`/student/courses/${course.slug}`}>
-            <Panel className="p-6 transition-colors hover:border-yellow">
-              <div className="flex items-center justify-between gap-4">
+            <Panel className="course-card overflow-hidden p-0 transition-colors hover:border-yellow">
+              {course.image_url && (
+                <div className="h-32 w-full overflow-hidden">
+                  <img src={course.image_url} alt={course.title} className="size-full object-cover" />
+                </div>
+              )}
+              <div className="flex items-center justify-between gap-4 p-6">
                 <div>
                   <p className="font-semibold">{course.title}</p>
                   <p className="muted mt-1 text-sm">{course.description}</p>

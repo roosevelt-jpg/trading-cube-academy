@@ -18,7 +18,7 @@ function moduleProgressFor(progress: ProgressRow[], mod: Module) {
 }
 
 export function StudentCourseView({ profile, courseSlug }: { profile: Profile; courseSlug: string }) {
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data: course } = await client.from('courses').select('*').eq('slug', courseSlug).maybeSingle()
     if (!course) return null
     const [{ data: modules }, { data: enrollment }, { data: modProgress }] = await Promise.all([
@@ -93,7 +93,7 @@ function ModuleRow({ mod, courseSlug, locked, completed, active, lessonCount }: 
 }
 
 export function StudentModuleView({ profile, courseSlug, moduleSlug, settings }: { profile: Profile; courseSlug: string; moduleSlug: string; settings: SiteSettings }) {
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data: course } = await client.from('courses').select('id,slug,title').eq('slug', courseSlug).maybeSingle()
     if (!course) return null
     const { data: mod } = await client.from('modules').select('*').eq('course_id', course.id).eq('slug', moduleSlug).maybeSingle()
@@ -138,7 +138,7 @@ export function StudentModuleView({ profile, courseSlug, moduleSlug, settings }:
 
 export function StudentLessonView({ profile, courseSlug, lessonSlug, settings }: { profile: Profile; courseSlug: string; lessonSlug: string; settings: SiteSettings }) {
   const [saving, setSaving] = useState(false)
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data: course } = await client.from('courses').select('id,slug,title').eq('slug', courseSlug).maybeSingle()
     const { data: lesson } = await client.from('lessons').select('*, modules(id,slug,title,course_id)').eq('slug', lessonSlug).maybeSingle()
     if (!lesson || !course) return null
@@ -213,7 +213,7 @@ export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: 
   const [submitting, setSubmitting] = useState(false)
   const [phase, setPhase] = useState<'intro' | 'active' | 'result'>('intro')
 
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data: course } = await client.from('courses').select('id').eq('slug', courseSlug).maybeSingle()
     const { data: mod } = await client.from('modules').select('id,title').eq('course_id', course?.id).eq('slug', moduleSlug).maybeSingle()
     if (!mod) return null
@@ -407,7 +407,7 @@ export function StudentQuizView({ profile, courseSlug, moduleSlug }: { profile: 
 }
 
 export function StudentProfileView({ profile }: { profile: Profile }) {
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data } = await client.from('enrollments').select('*, courses(title,slug)').eq('user_id', profile.id)
     return data ?? []
   }, [profile.id])
@@ -443,7 +443,7 @@ export function StudentSupportView({ profile }: { profile: Profile }) {
   const [submitting, setSubmitting] = useState(false)
   const contact = useSupportContact()
 
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data } = await client.from('support_tickets').select('*').eq('user_id', profile.id).order('created_at', { ascending: false })
     return data ?? []
   }, [profile.id])
@@ -507,7 +507,7 @@ export function StudentSupportView({ profile }: { profile: Profile }) {
 }
 
 export function StudentCertificateView({ profile, courseSlug }: { profile: Profile; courseSlug: string }) {
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const { data: course } = await client.from('courses').select('*').eq('slug', courseSlug).maybeSingle()
     if (!course) return null
     const { data: cert } = await client.from('certificates').select('*').eq('user_id', profile.id).eq('course_id', course.id).maybeSingle()

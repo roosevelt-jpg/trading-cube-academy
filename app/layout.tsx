@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'https://tca.myflynai.com'),
   title: 'The Trading Cube Academy',
   description: 'A structured trading education built for clarity, process, and progress.',
   generator: 'v0.app',

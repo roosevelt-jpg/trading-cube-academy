@@ -52,6 +52,11 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
   const settings = data.settings
   const home = settings.homepage ?? {}
   const heroImage = home.heroImageUrl ?? (typeof settings.images === 'object' && settings.images && 'hero' in settings.images ? (settings.images as Record<string, string>).hero : undefined)
+  const pillarImages = [
+    (settings.images as Record<string, Record<string, string>> | undefined)?.pillars?.sequence,
+    (settings.images as Record<string, Record<string, string>> | undefined)?.pillars?.accountability,
+    (settings.images as Record<string, Record<string, string>> | undefined)?.pillars?.support,
+  ]
 
   return (
     <main className="min-h-screen bg-background">
@@ -81,7 +86,7 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
           <p className="mono muted text-[11.5px] tracking-wide">{home.trustLine}</p>
         </div>
         {heroImage && (
-          <div className="relative hidden min-h-[340px] flex-1 overflow-hidden border border-[var(--border)] md:block lg:max-w-[520px]">
+          <div className="relative min-h-[240px] flex-1 overflow-hidden border border-[var(--border)] md:min-h-[340px] lg:max-w-[520px]">
             <img src={heroImage as string} alt="Trader analyzing live market charts" className="size-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg)] via-transparent to-transparent" />
             <Panel className="absolute bottom-4 left-4 right-4 p-3">
@@ -109,11 +114,18 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
           <h2 className="h2 text-[26px] leading-snug">Most trading education stops at theory. Ours stops at proof.</h2>
         </div>
         <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-3">
-          {data.pillars.map((p) => (
-            <Panel key={p.id} className="p-7">
-              <p className="mono mb-3.5 text-[13px] text-yellow">{p.number_label}</p>
-              <p className="mb-2.5 text-base font-semibold">{p.title}</p>
-              <p className="muted text-[13.5px] leading-relaxed">{p.body}</p>
+          {data.pillars.map((p, i) => (
+            <Panel key={p.id} className="pillar-card overflow-hidden p-0">
+              {pillarImages[i] && (
+                <div className="h-28 w-full overflow-hidden">
+                  <img src={pillarImages[i]} alt="" className="size-full object-cover opacity-80" />
+                </div>
+              )}
+              <div className="p-7">
+                <p className="mono mb-3.5 text-[13px] text-yellow">{p.number_label}</p>
+                <p className="mb-2.5 text-base font-semibold">{p.title}</p>
+                <p className="muted text-[13.5px] leading-relaxed">{p.body}</p>
+              </div>
             </Panel>
           ))}
         </div>

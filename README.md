@@ -117,12 +117,17 @@ Run **`node scripts/seed-auth-users.mjs`** before or after `seed.sql` on hosted 
 
 **Change these passwords before production deployment.**
 
-## Deployment
+## Deployment (Vercel — https://tca.myflynai.com)
 
 1. Apply migrations and seed to your production Supabase instance
-2. Set environment variables in Vercel (or your host)
-3. `pnpm build && pnpm start`
-4. Disable email confirmation in Supabase Auth for invite-only flows, or configure SMTP
+2. Set environment variables in Vercel:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or `NEXT_PUBLIC_SUPABASE_ANON_KEY`)
+   - `SUPABASE_SECRET_KEY` (service role — server routes & WhatsApp notify)
+   - `NEXT_PUBLIC_SITE_URL=https://tca.myflynai.com`
+3. Connect the repo and deploy; Vercel runs `pnpm build` automatically
+4. Run `node scripts/seed-auth-users.mjs` and `node scripts/seed-lms-data.mjs` against production Supabase once
+5. Disable email confirmation in Supabase Auth for invite-only flows, or configure SMTP
 
 ## Project structure
 

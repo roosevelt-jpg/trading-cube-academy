@@ -21,7 +21,7 @@ type IntegrationRow = {
 }
 
 export function AdminIntegrationsView() {
-  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
     const res = await fetch('/api/admin/integrations')
     if (!res.ok) return [] as IntegrationRow[]
     const json = await res.json()

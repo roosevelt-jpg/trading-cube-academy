@@ -342,7 +342,57 @@
   .auth-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 60px 20px; }
   .auth-card { width: 420px; padding: 44px 40px; }
 
+  .lesson-layout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 32px;
+    align-items: start;
+  }
+  .lesson-main { min-width: 0; }
+  .lesson-sidebar {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-soft);
+    padding: 20px;
+    position: sticky;
+    top: 24px;
+  }
+  .lesson-sidebar-nav { display: flex; flex-direction: column; gap: 4px; }
+  .lesson-sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-left: 2px solid transparent;
+    color: var(--muted);
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+  }
+  .lesson-sidebar-item:hover { color: var(--white); background: var(--bg-elevated); }
+  .lesson-sidebar-item.current { border-left-color: var(--yellow); color: var(--yellow); background: var(--bg-elevated); }
+  .lesson-sidebar-item.done { color: var(--green); }
+  .lesson-sidebar-item.locked { opacity: 0.45; }
+  .lesson-sidebar-icon { font-family: var(--font-mono); font-size: 11px; flex-shrink: 0; width: 14px; text-align: center; }
+
+  .quiz-segments { display: flex; gap: 4px; margin-bottom: 4px; }
+  .quiz-segment {
+    flex: 1;
+    height: 4px;
+    background: var(--border-soft);
+    border-radius: 2px;
+    transition: background 0.2s;
+  }
+  .quiz-segment.answered { background: var(--muted-2); }
+  .quiz-segment.current { background: var(--yellow); }
+
+  @media print {
+    .sidebar, .topbar, .no-print, .whatsapp-float { display: none !important; }
+    .app-shell { display: block !important; }
+    .certificate-print-area { min-height: auto; padding: 0; }
+    .certificate-print-area .panel { border: 2px solid #000 !important; box-shadow: none; }
+  }
+
   @media (max-width: 768px) {
+    .lesson-layout { grid-template-columns: 1fr; }
+    .lesson-sidebar { position: static; order: -1; }
     .mkt-header, .mkt-hero, .mkt-section, .mkt-footer { padding-left: 20px; padding-right: 20px; }
     .mkt-hero { flex-direction: column; padding-top: 60px; }
     .mkt-stat-strip { flex-direction: column; }

@@ -199,7 +199,14 @@ export type QuizProctoringRecording = {
   file_size_bytes: number | null
   created_at: string
 }
-export type Certificate = { id: string; user_id: string; course_id: string; certificate_code: string; issued_at: string }
+export type Certificate = {
+  id: string
+  user_id: string
+  course_id: string
+  certificate_code: string
+  issued_at: string
+  final_score?: number | null
+}
 export type SupportTicket = { id: string; user_id: string | null; student_name: string | null; subject: string; message: string; channel: string; status: 'open' | 'closed'; created_at: string }
 export type ActivityEvent = { id: string; event_type: string; title: string; meta: Record<string, unknown>; created_at: string }
 export type AccessRequest = { id: string; full_name: string | null; email: string; message: string | null; status: string; created_at: string }

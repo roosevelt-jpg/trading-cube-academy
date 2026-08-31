@@ -99,7 +99,7 @@ export function AuthForm({
         <p className="muted mt-2 text-sm">{subs[mode]}</p>
 
         {mode === 'login' ? (
-          <form className="mt-8 space-y-4" action={loginFormAction} method="post">
+          <form className="mt-8 space-y-4" action={loginFormAction}>
             <div className="input-group">
               <label htmlFor="login-email">Email address</label>
               <input
@@ -138,7 +138,7 @@ export function AuthForm({
             </Btn>
           </form>
         ) : (
-          <form className="mt-8 space-y-4" method="post" onSubmit={submit}>
+          <form className="mt-8 space-y-4" onSubmit={submit}>
             {mode === 'signup' && (
               <div className="input-group">
                 <label>Full Name</label>

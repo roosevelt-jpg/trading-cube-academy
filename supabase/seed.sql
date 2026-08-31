@@ -263,4 +263,6 @@ insert into public.integration_settings (provider, label, enabled, public_value)
 ('openai', 'OpenAI (optional)', false, '{"model":"gpt-4o-mini"}'::jsonb)
 on conflict (provider) do update set label = excluded.label;
 
+-- Support ticket sample
+insert into public.support_tickets (user_id, student_name, subject, message, channel, status) values
 ('a0000000-0000-4000-8000-000000000002', 'Marcus Harrison', 'Quiz retry question', 'Can I review my incorrect answers from the Module 2 quiz?', 'email', 'open');

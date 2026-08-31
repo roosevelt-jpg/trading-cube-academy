@@ -131,6 +131,26 @@ Run **`node scripts/seed-auth-users.mjs`** before or after `seed.sql` on hosted 
 
 ## Deployment (Vercel — https://tca.myflynai.com)
 
+### Publish code to GitHub (required once)
+
+The live site deploys from **GitHub** (`roosevelt-jpg/trading-cube-academy`), not the Cursor agent repo. From a machine with GitHub access:
+
+```bash
+chmod +x scripts/publish-to-github.sh
+./scripts/publish-to-github.sh
+```
+
+Or manually:
+
+```bash
+git remote add upstream https://github.com/roosevelt-jpg/trading-cube-academy.git  # if missing
+git push upstream main --force-with-lease
+```
+
+Alternatively, connect GitHub in [Cursor Integrations](https://cursor.com/dashboard?tab=integrations) with write access to the repo, then ask a cloud agent to push.
+
+### Vercel setup
+
 1. Apply migrations and seed to your production Supabase instance
 2. Set environment variables in Vercel:
    - `NEXT_PUBLIC_SUPABASE_URL`
@@ -138,8 +158,8 @@ Run **`node scripts/seed-auth-users.mjs`** before or after `seed.sql` on hosted 
    - `SUPABASE_SECRET_KEY` (service role — server routes & WhatsApp notify)
    - `BLOB_READ_WRITE_TOKEN` (quiz proctoring webcam recordings)
    - `NEXT_PUBLIC_SITE_URL=https://tca.myflynai.com`
-3. Connect the repo and deploy; Vercel runs `pnpm build` automatically
-4. Run `node scripts/seed-auth-users.mjs` and `node scripts/seed-lms-data.mjs` against production Supabase once
+3. Connect the GitHub repo and deploy; Vercel runs `npm run build` automatically
+4. Run `node scripts/sync-supabase-content.mjs` and `node scripts/seed-auth-users.mjs` against production Supabase once
 5. Disable email confirmation in Supabase Auth for invite-only flows, or configure SMTP
 
 ## Project structure

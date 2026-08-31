@@ -2,16 +2,16 @@
 
 import { FormEvent, useState } from 'react'
 import Link from 'next/link'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { getSupabaseEnv } from '@/lib/supabase/env'
-import { Btn, ConfigRequired, Eyebrow, Logo, Panel } from '@/components/ui/academy-ui'
+import { Btn, Eyebrow, Logo, Panel } from '@/components/ui/academy-ui'
 import type { SiteSettings } from '@/lib/types/database'
 
 export function AuthForm({ mode, settings }: { mode: 'login' | 'signup' | 'forgot'; settings?: SiteSettings | null }) {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const configured = getSupabaseEnv().configured
+  const bg = settings?.homepage?.heroImageUrl ?? (settings?.images as Record<string, string> | undefined)?.authBackground
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -19,12 +19,12 @@ export function AuthForm({ mode, settings }: { mode: 'login' | 'signup' | 'forgo
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
 
-  if (!configured || searchParams.get('error') === 'supabase') {
-    return <ConfigRequired />
-  }
-
   const submit = async (e: FormEvent) => {
     e.preventDefault()
+    if (!configured) {
+      setMessage('Connect Supabase to enable sign-in. Default content is visible across the site.')
+      return
+    }
     setBusy(true)
     setMessage('')
     const client = createClient()
@@ -62,8 +62,14 @@ export function AuthForm({ mode, settings }: { mode: 'login' | 'signup' | 'forgo
   const subs = { login: 'Sign in to continue your learning path.', signup: 'Open access to the Trading Cube Academy.', forgot: 'We will email you a reset link.' }
 
   return (
-    <main className="auth-wrap bg-grid">
-      <Panel className="auth-card">
+    <main className="auth-wrap relative bg-grid">
+      {bg && (
+        <>
+          <img src={bg} alt="" className="absolute inset-0 size-full object-cover opacity-20" aria-hidden />
+          <div className="absolute inset-0 bg-[var(--bg)]/85" aria-hidden />
+        </>
+      )}
+      <Panel className="auth-card relative z-10">
         <div className="mb-8 flex justify-center"><Logo settings={settings ?? undefined} /></div>
         <Eyebrow className="mb-3">{mode === 'login' ? 'Members only' : mode === 'signup' ? 'Start your path' : 'Account recovery'}</Eyebrow>
         <h1 className="h1 text-3xl">{titles[mode]}</h1>

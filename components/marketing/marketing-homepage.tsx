@@ -5,12 +5,14 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { getSupabaseEnv } from '@/lib/supabase/env'
 import type { MarketingBundle } from '@/lib/data/marketing'
-import { Btn, ConfigRequired, Eyebrow, Logo, Panel } from '@/components/ui/academy-ui'
+import { defaultMarketingBundle } from '@/lib/defaults/cms-defaults'
+import { mergeSettings } from '@/lib/defaults/cms-defaults'
+import { Btn, Eyebrow, Logo, Panel } from '@/components/ui/academy-ui'
 import type { SiteSettings } from '@/lib/types/database'
 import { tierLabel, whatsappUrl } from '@/lib/utils/site'
 import { FaqSection } from '@/components/marketing/faq-section'
 
-export function MarketingHomepageView({ initialData }: { initialData: MarketingBundle | null }) {
+export function MarketingHomepageView({ initialData }: { initialData: MarketingBundle }) {
   const [data, setData] = useState(initialData)
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
         client.from('courses').select('*').eq('published', true).order('sort_order'),
         client.from('youtube_videos').select('*').eq('visibility', 'marketing').eq('published', true).order('sort_order'),
       ])
-      const settings = Object.fromEntries((settingsRes.data ?? []).map((r: { key: string; value: unknown }) => [r.key, r.value])) as SiteSettings
+      const settings = mergeSettings(Object.fromEntries((settingsRes.data ?? []).map((r: { key: string; value: unknown }) => [r.key, r.value]))) as SiteSettings
       setData({
         settings,
         stats: stats.data ?? [],
@@ -46,19 +48,18 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
     return () => { channels.forEach((ch) => client.removeChannel(ch)) }
   }, [initialData])
 
-  if (!data) return <ConfigRequired />
-
   const settings = data.settings
   const home = settings.homepage ?? {}
+  const heroImage = home.heroImageUrl ?? (typeof settings.images === 'object' && settings.images && 'hero' in settings.images ? (settings.images as Record<string, string>).hero : undefined)
 
   return (
     <main className="min-h-screen bg-background">
       <header className="mkt-header flex-wrap gap-4">
         <Logo settings={settings} />
         <nav className="mkt-nav order-3 flex w-full flex-wrap gap-4 md:order-none md:w-auto md:gap-9">
-          <a href="#mkt-curriculum">Curriculum</a>
-          <a href="#mkt-how">How It Works</a>
-          <a href="#mkt-results">Results</a>
+          <Link href="/courses">Courses</Link>
+          <Link href="/method">Method</Link>
+          <Link href="/about">About</Link>
           <a href="#mkt-faq">FAQ</a>
         </nav>
         <div className="flex gap-3">
@@ -78,6 +79,16 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
           </div>
           <p className="mono muted text-[11.5px] tracking-wide">{home.trustLine}</p>
         </div>
+        {heroImage && (
+          <div className="relative hidden min-h-[340px] flex-1 overflow-hidden border border-[var(--border)] md:block lg:max-w-[520px]">
+            <img src={heroImage as string} alt="Trader analyzing live market charts" className="size-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[var(--bg)] via-transparent to-transparent" />
+            <Panel className="absolute bottom-4 left-4 right-4 p-3">
+              <p className="mono text-[10px] uppercase tracking-wider text-yellow">Live curriculum preview</p>
+              <p className="text-sm font-semibold">Price Action Mastery · Module 3</p>
+            </Panel>
+          </div>
+        )}
       </section>
 
       <div className="mkt-stat-strip">
@@ -114,12 +125,19 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
         </div>
         <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-3">
           {data.courses.map((course) => (
-            <Panel key={course.id} className="course-card">
-              <div className="flex items-start justify-between">
-                <span className={`pill ${course.tier === 'foundation' ? 'pill-yellow' : ''}`}>{tierLabel(course.tier)}</span>
+            <Panel key={course.id} className="course-card overflow-hidden p-0">
+              {course.image_url && (
+                <div className="h-36 w-full overflow-hidden">
+                  <img src={course.image_url} alt={course.title} className="size-full object-cover transition-transform duration-300 hover:scale-105" />
+                </div>
+              )}
+              <div className="flex flex-col gap-3.5 p-5">
+                <div className="flex items-start justify-between">
+                  <span className={`pill ${course.tier === 'foundation' ? 'pill-yellow' : ''}`}>{tierLabel(course.tier)}</span>
+                </div>
+                <p className="text-[15.5px] font-semibold">{course.title}</p>
+                <p className="muted text-[13px]">{course.module_count} modules · {course.description}</p>
               </div>
-              <p className="text-[15.5px] font-semibold">{course.title}</p>
-              <p className="muted text-[13px]">{course.module_count} modules · {course.description}</p>
             </Panel>
           ))}
         </div>
@@ -174,9 +192,12 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
           {data.testimonials.map((t) => (
             <Panel key={t.id} className="testimonial-card">
               <p className="text-[14.5px] leading-relaxed">&ldquo;{t.quote}&rdquo;</p>
-              <div>
-                <p className="text-[13.5px] font-semibold">{t.author_name}</p>
-                <p className="mono muted text-[11.5px]">{t.author_meta}</p>
+              <div className="flex items-center gap-3">
+                {t.image_url && <img src={t.image_url} alt={t.author_name} className="size-10 rounded-full border border-[var(--border)] object-cover" />}
+                <div>
+                  <p className="text-[13.5px] font-semibold">{t.author_name}</p>
+                  <p className="mono muted text-[11.5px]">{t.author_meta}</p>
+                </div>
               </div>
             </Panel>
           ))}
@@ -191,10 +212,18 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
         <FaqSection items={data.faqs} />
       </section>
 
-      <section className="cta-band bg-grid">
-        <Eyebrow className="mb-4">Created by traders, for traders</Eyebrow>
-        <h2 className="h1 mb-6 text-[32px]">Ready to trade with <span className="grad-text">structure?</span></h2>
-        <Btn href="/contact">Request Access →</Btn>
+      <section className="cta-band relative overflow-hidden bg-grid">
+        {(home.ctaImageUrl as string | undefined) && (
+          <>
+            <img src={home.ctaImageUrl as string} alt="" className="absolute inset-0 size-full object-cover opacity-25" aria-hidden />
+            <div className="absolute inset-0 bg-[var(--bg)]/70" aria-hidden />
+          </>
+        )}
+        <div className="relative z-10">
+          <Eyebrow className="mb-4">Created by traders, for traders</Eyebrow>
+          <h2 className="h1 mb-6 text-[32px]">Ready to trade with <span className="grad-text">structure?</span></h2>
+          <Btn href="/contact">Request Access →</Btn>
+        </div>
       </section>
 
       <footer className="mkt-footer">
@@ -211,9 +240,9 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
           </div>
           <div className="mkt-footer-col">
             <h4>Academy</h4>
-            <Link href="#mkt-how">How It Works</Link>
-            <Link href="#mkt-results">Results</Link>
-            <Link href="#mkt-faq">FAQ</Link>
+            <Link href="/about">About</Link>
+            <Link href="/method">Method</Link>
+            <Link href="/resources">Resources</Link>
             <Link href="/login">Member Login</Link>
           </div>
           <div className="mkt-footer-col">

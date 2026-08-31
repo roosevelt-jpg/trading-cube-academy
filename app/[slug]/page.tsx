@@ -1,16 +1,19 @@
-import { fetchContactPage, fetchMarketingData } from '@/lib/data/marketing'
-import { MarketingHomepageView } from '@/components/marketing/marketing-homepage'
+import { notFound } from 'next/navigation'
+import { fetchCmsPage, fetchContactPage } from '@/lib/data/marketing'
+import { CmsPageView } from '@/components/marketing/cms-page-view'
 import { ContactPageView } from '@/components/marketing/contact-page'
 
 export const dynamic = 'force-dynamic'
 
 export default async function CmsSlugPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
+
   if (slug === 'contact') {
     const data = await fetchContactPage()
-    return <ContactPageView settings={data?.settings ?? null} page={data?.page ?? null} />
+    return <ContactPageView settings={data.settings} page={data.page} />
   }
 
-  const initialData = await fetchMarketingData()
-  return <MarketingHomepageView initialData={initialData} />
+  const { settings, page } = await fetchCmsPage(slug)
+  if (!page) notFound()
+  return <CmsPageView page={page} settings={settings} />
 }

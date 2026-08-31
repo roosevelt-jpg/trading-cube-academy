@@ -5,5 +5,5 @@ export const dynamic = 'force-dynamic'
 
 export default async function Page() {
   const data = await fetchContactPage()
-  return <ContactPageView settings={data?.settings ?? null} page={data?.page ?? null} />
+  return <ContactPageView settings={data.settings} page={data.page} />
 }

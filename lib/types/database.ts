@@ -10,10 +10,19 @@ export type Profile = {
 
 export type SiteSettings = {
   branding?: { companyName?: string; tagline?: string; logoPathname?: string }
-  homepage?: { eyebrow?: string; headline?: string; description?: string; trustLine?: string }
+  homepage?: {
+    eyebrow?: string
+    headline?: string
+    description?: string
+    trustLine?: string
+    heroImageUrl?: string
+    heroTerminalImageUrl?: string
+    ctaImageUrl?: string
+  }
   footer?: { description?: string; email?: string; whatsapp?: string }
   enrollment?: { inviteOnly?: boolean; passingScoreDefault?: number; maxQuizAttempts?: number }
   support?: { email?: string; whatsapp?: string; whatsappLabel?: string }
+  images?: Record<string, string | Record<string, string>>
 }
 
 export type Course = {
@@ -28,6 +37,7 @@ export type Course = {
   enrolled_count: number
   sort_order: number
   published: boolean
+  image_url?: string | null
 }
 
 export type Module = {
@@ -70,7 +80,7 @@ export type YoutubeVideo = {
 export type MarketingStat = { id: string; label: string; value: string; accent: string | null; sort_order: number }
 export type MarketingPillar = { id: string; number_label: string; title: string; body: string; sort_order: number }
 export type MarketingStep = { id: string; number_label: string; title: string; body: string; sort_order: number }
-export type Testimonial = { id: string; quote: string; author_name: string; author_meta: string; sort_order: number }
+export type Testimonial = { id: string; quote: string; author_name: string; author_meta: string; image_url?: string | null; sort_order: number }
 export type FaqItem = { id: string; question: string; answer: string; sort_order: number }
 export type PageContent = {
   id: string
@@ -78,6 +88,7 @@ export type PageContent = {
   title: string
   eyebrow: string | null
   description: string | null
+  hero_image_url?: string | null
   sections: { heading: string; body: string }[]
   primary_cta_label: string | null
   primary_cta_href: string | null

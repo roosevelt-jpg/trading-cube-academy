@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useRealtimeQuery } from '@/lib/hooks/use-realtime-query'
 import { Btn, Eyebrow, LoadingState, Panel, Pill, ProgressTrack } from '@/components/ui/academy-ui'
-import type { ActivityEvent, Course, Profile, SiteSettings, SupportTicket } from '@/lib/types/database'
+import { DEFAULT_PAGES } from '@/lib/defaults/cms-defaults'
+import type { ActivityEvent, Course, PageContent, Profile, SiteSettings, SupportTicket, Testimonial } from '@/lib/types/database'
 import { formatRelativeDate, tierLabel } from '@/lib/utils/site'
 
 export function AdminDashboardView() {
@@ -416,34 +417,219 @@ export function AdminSupportView() {
   )
 }
 
+export function AdminPagesView() {
+  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+    const { data } = await client.from('page_contents').select('*').order('slug')
+    return (data?.length ? data : Object.values(DEFAULT_PAGES)) as PageContent[]
+  }, [])
+  const { data, loading } = useRealtimeQuery('page_contents', fetcher, [])
+  if (loading) return <LoadingState />
+
+  return (
+    <div className="content-pad">
+      <Eyebrow>CMS pages</Eyebrow>
+      <h1 className="h1 mt-2 text-3xl">Site pages</h1>
+      <p className="muted mt-2 max-w-xl text-sm">Every page ships with default trading-industry copy and hero images. Edit any page below — changes sync live.</p>
+      <div className="mt-8 space-y-3">
+        {(data ?? []).map((page) => (
+          <Panel key={page.slug} className="flex flex-wrap items-center justify-between gap-4 p-5">
+            <div>
+              <p className="font-semibold">{page.title}</p>
+              <p className="mono muted text-xs">/{page.slug}</p>
+            </div>
+            <Btn variant="ghost" size="sm" href={`/admin/pages/${page.slug}`}>Edit page</Btn>
+          </Panel>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function AdminPageEditor({ slug }: { slug: string }) {
+  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+    const { data } = await client.from('page_contents').select('*').eq('slug', slug).maybeSingle()
+    return (data ?? DEFAULT_PAGES[slug] ?? null) as PageContent | null
+  }, [slug])
+
+  const { data: page, loading, reload } = useRealtimeQuery('page_contents', fetcher, [slug])
+  const [draft, setDraft] = useState<Partial<PageContent>>({})
+
+  if (loading) return <LoadingState />
+  if (!page) return <div className="content-pad">Page not found.</div>
+
+  const current = { ...page, ...draft }
+
+  const save = async () => {
+    const client = createClient()
+    const payload = {
+      slug,
+      title: current.title,
+      eyebrow: current.eyebrow,
+      description: current.description,
+      hero_image_url: current.hero_image_url,
+      sections: current.sections,
+      primary_cta_label: current.primary_cta_label,
+      primary_cta_href: current.primary_cta_href,
+    }
+    if ('id' in page && page.id) {
+      await client.from('page_contents').update(payload).eq('slug', slug)
+    } else {
+      await client.from('page_contents').upsert(payload, { onConflict: 'slug' })
+    }
+    setDraft({})
+    reload()
+  }
+
+  return (
+    <div className="content-pad max-w-3xl">
+      <Link href="/admin/pages" className="mono muted text-xs hover:text-yellow">← All pages</Link>
+      <div className="topbar mt-4 px-0">
+        <Eyebrow>Editing /{slug}</Eyebrow>
+        <Btn size="sm" onClick={save}>Save page</Btn>
+      </div>
+
+      {current.hero_image_url && (
+        <Panel className="mt-6 overflow-hidden p-0">
+          <img src={current.hero_image_url} alt="Hero preview" className="h-48 w-full object-cover" />
+        </Panel>
+      )}
+
+      <Panel className="mt-6 space-y-4 p-6">
+        <div className="input-group"><label>Title</label><input className="input" value={current.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} /></div>
+        <div className="input-group"><label>Eyebrow</label><input className="input" value={current.eyebrow ?? ''} onChange={(e) => setDraft({ ...draft, eyebrow: e.target.value })} /></div>
+        <div className="input-group"><label>Description</label><textarea className="input min-h-[100px]" value={current.description ?? ''} onChange={(e) => setDraft({ ...draft, description: e.target.value })} /></div>
+        <div className="input-group"><label>Hero image URL</label><input className="input" value={current.hero_image_url ?? ''} onChange={(e) => setDraft({ ...draft, hero_image_url: e.target.value })} placeholder="https://images.unsplash.com/..." /></div>
+      </Panel>
+
+      <Eyebrow className="mt-8 mb-4">Sections</Eyebrow>
+      {(current.sections ?? []).map((section, i) => (
+        <Panel key={`${section.heading}-${i}`} className="mb-4 space-y-3 p-5">
+          <div className="input-group"><label>Heading</label><input className="input" value={section.heading} onChange={(e) => {
+            const sections = [...(current.sections ?? [])]
+            sections[i] = { ...sections[i], heading: e.target.value }
+            setDraft({ ...draft, sections })
+          }} /></div>
+          <div className="input-group"><label>Body</label><textarea className="input min-h-[80px]" value={section.body} onChange={(e) => {
+            const sections = [...(current.sections ?? [])]
+            sections[i] = { ...sections[i], body: e.target.value }
+            setDraft({ ...draft, sections })
+          }} /></div>
+        </Panel>
+      ))}
+    </div>
+  )
+}
+
 export function AdminSettingsView() {
   const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
     const { data } = await client.from('site_settings').select('key,value')
     return Object.fromEntries((data ?? []).map((r: { key: string; value: unknown }) => [r.key, r.value])) as SiteSettings
   }, [])
   const { data: settings, loading, reload } = useRealtimeQuery('site_settings', fetcher, [])
-  const [homepage, setHomepage] = useState<any>(null)
+  const [draft, setDraft] = useState<Record<string, unknown>>({})
 
   if (loading) return <LoadingState />
-  const hp = homepage ?? settings?.homepage ?? {}
+
+  const hp = { ...settings?.homepage, ...(draft.homepage as object) }
+  const branding = { ...settings?.branding, ...(draft.branding as object) }
+  const footer = { ...settings?.footer, ...(draft.footer as object) }
 
   const save = async () => {
     const client = createClient()
-    await client.from('site_settings').upsert({ key: 'homepage', value: { ...settings?.homepage, ...homepage } })
-    await client.from('site_settings').upsert({ key: 'support', value: settings?.support })
+    await client.from('site_settings').upsert({ key: 'homepage', value: hp })
+    await client.from('site_settings').upsert({ key: 'branding', value: branding })
+    await client.from('site_settings').upsert({ key: 'footer', value: footer })
+    if (draft.images) await client.from('site_settings').upsert({ key: 'images', value: draft.images })
+    setDraft({})
+    reload()
+  }
+
+  const updateCourseImage = async (courseId: string, image_url: string) => {
+    await createClient().from('courses').update({ image_url }).eq('id', courseId)
+    reload()
+  }
+
+  const updateTestimonialImage = async (id: string, image_url: string) => {
+    await createClient().from('testimonials').update({ image_url }).eq('id', id)
     reload()
   }
 
   return (
-    <div className="content-pad max-w-2xl">
+    <div className="content-pad max-w-3xl">
       <Eyebrow>Academy settings</Eyebrow>
-      <h1 className="h1 mt-2 text-3xl">Branding & enrollment</h1>
+      <h1 className="h1 mt-2 text-3xl">Branding, images & copy</h1>
+      <p className="muted mt-2 text-sm">Replace any image URL with your own asset or upload to Vercel Blob and paste the link.</p>
+
       <Panel className="mt-8 space-y-4 p-6">
-        <div className="input-group"><label>Hero headline</label><input className="input" defaultValue={hp.headline} onChange={(e) => setHomepage({ ...hp, headline: e.target.value })} /></div>
-        <div className="input-group"><label>Hero description</label><textarea className="input min-h-[100px]" defaultValue={hp.description} onChange={(e) => setHomepage({ ...hp, description: e.target.value })} /></div>
-        <div className="input-group"><label>Support Email</label><input className="input" defaultValue={settings?.support?.email ?? settings?.footer?.email} readOnly /></div>
-        <Btn onClick={save}>Save settings</Btn>
+        <Eyebrow>Branding</Eyebrow>
+        <div className="input-group"><label>Academy name</label><input className="input" defaultValue={branding.companyName} onChange={(e) => setDraft({ ...draft, branding: { ...branding, companyName: e.target.value } })} /></div>
+        <div className="input-group"><label>Logo image URL</label><input className="input" defaultValue={branding.logoPathname} onChange={(e) => setDraft({ ...draft, branding: { ...branding, logoPathname: e.target.value } })} /></div>
+        {branding.logoPathname && <img src={branding.logoPathname} alt="Logo preview" className="h-16 w-auto object-contain" />}
       </Panel>
+
+      <Panel className="mt-6 space-y-4 p-6">
+        <Eyebrow>Homepage</Eyebrow>
+        <div className="input-group"><label>Hero headline</label><input className="input" defaultValue={hp.headline} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, headline: e.target.value } })} /></div>
+        <div className="input-group"><label>Hero description</label><textarea className="input min-h-[100px]" defaultValue={hp.description} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, description: e.target.value } })} /></div>
+        <div className="input-group"><label>Hero image URL</label><input className="input" defaultValue={hp.heroImageUrl} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, heroImageUrl: e.target.value } })} /></div>
+        <div className="input-group"><label>CTA band image URL</label><input className="input" defaultValue={hp.ctaImageUrl} onChange={(e) => setDraft({ ...draft, homepage: { ...hp, ctaImageUrl: e.target.value } })} /></div>
+        {hp.heroImageUrl && <img src={hp.heroImageUrl} alt="Hero preview" className="h-40 w-full object-cover" />}
+      </Panel>
+
+      <Panel className="mt-6 space-y-4 p-6">
+        <Eyebrow>Footer & support</Eyebrow>
+        <div className="input-group"><label>Footer description</label><textarea className="input" defaultValue={footer.description} onChange={(e) => setDraft({ ...draft, footer: { ...footer, description: e.target.value } })} /></div>
+        <div className="input-group"><label>Support email</label><input className="input" defaultValue={footer.email} onChange={(e) => setDraft({ ...draft, footer: { ...footer, email: e.target.value } })} /></div>
+      </Panel>
+
+      <CourseImageEditor onSave={updateCourseImage} />
+      <TestimonialImageEditor onSave={updateTestimonialImage} />
+
+      <Btn onClick={save} className="mt-8">Save all settings</Btn>
     </div>
+  )
+}
+
+function CourseImageEditor({ onSave }: { onSave: (id: string, url: string) => void }) {
+  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+    const { data } = await client.from('courses').select('id,title,slug,image_url').order('sort_order')
+    return data ?? []
+  }, [])
+  const { data, loading } = useRealtimeQuery('courses', fetcher, [])
+  if (loading) return null
+
+  return (
+    <Panel className="mt-6 space-y-4 p-6">
+      <Eyebrow>Course card images</Eyebrow>
+      {(data ?? []).map((c: { id: string; title: string; image_url?: string }) => (
+        <div key={c.id} className="flex flex-wrap items-center gap-4 border-b border-[var(--border-soft)] pb-4 last:border-0">
+          {c.image_url && <img src={c.image_url} alt={c.title} className="size-16 object-cover" />}
+          <div className="min-w-[140px] flex-1 text-sm font-medium">{c.title}</div>
+          <input className="input max-w-md flex-1" defaultValue={c.image_url ?? ''} onBlur={(e) => onSave(c.id, e.target.value)} placeholder="Image URL" />
+        </div>
+      ))}
+    </Panel>
+  )
+}
+
+function TestimonialImageEditor({ onSave }: { onSave: (id: string, url: string) => void }) {
+  const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
+    const { data } = await client.from('testimonials').select('id,author_name,image_url').order('sort_order')
+    return (data ?? []) as Testimonial[]
+  }, [])
+  const { data, loading } = useRealtimeQuery('testimonials', fetcher, [])
+  if (loading) return null
+
+  return (
+    <Panel className="mt-6 space-y-4 p-6">
+      <Eyebrow>Testimonial avatars</Eyebrow>
+      {(data ?? []).map((t) => (
+        <div key={t.id} className="flex flex-wrap items-center gap-4 border-b border-[var(--border-soft)] pb-4 last:border-0">
+          {t.image_url && <img src={t.image_url} alt={t.author_name} className="size-10 rounded-full object-cover" />}
+          <div className="min-w-[100px] flex-1 text-sm">{t.author_name}</div>
+          <input className="input max-w-md flex-1" defaultValue={t.image_url ?? ''} onBlur={(e) => onSave(t.id, e.target.value)} placeholder="Avatar URL" />
+        </div>
+      ))}
+    </Panel>
   )
 }

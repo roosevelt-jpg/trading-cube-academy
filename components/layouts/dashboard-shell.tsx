@@ -77,6 +77,7 @@ export function AdminShell({
   const router = useRouter()
   const links = [
     { href: '/admin', label: '◆ Dashboard', exact: true },
+    { href: '/admin/pages', label: '◈ Pages' },
     { href: '/admin/courses', label: '▤ Courses' },
     { href: '/admin/students', label: '☺ Students' },
     { href: '/admin/support', label: '✉ Support' },

@@ -50,10 +50,11 @@ on conflict (id) do update set
 -- Site settings (CMS)
 insert into public.site_settings (key, value) values
 ('branding', '{"companyName":"The Trading Cube Academy","tagline":"Created by traders, for traders.","logoPathname":"https://hebbkx1anhila5yf.public.blob.vercel-storage.com/WhatsApp%20Image%202026-08-28%20at%2001.07.23-KxSUitIOxLLo5caKphzA7Ia47n2FEi.jpeg"}'::jsonb),
-('homepage', '{"eyebrow":"Private trading education · Invite only","headline":"Stop guessing. Start trading with structure.","description":"A sequential, video-led curriculum built by full-time traders — price action, risk management and execution, taught in order and tested at every step.","trustLine":"TRUSTED BY 300+ ACTIVE TRADERS WORLDWIDE"}'::jsonb),
+('homepage', '{"eyebrow":"Private trading education · Invite only","headline":"Stop guessing. Start trading with structure.","description":"A sequential, video-led curriculum built by full-time traders — price action, risk management and execution, taught in order and tested at every step.","trustLine":"TRUSTED BY 300+ ACTIVE TRADERS WORLDWIDE","heroImageUrl":"https://images.unsplash.com/photo-1611974789855-9c2a00d0712a?w=1400&q=80&auto=format&fit=crop","heroTerminalImageUrl":"https://images.unsplash.com/photo-1642790106117-e829e014aba0?w=900&q=80&auto=format&fit=crop","ctaImageUrl":"https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1400&q=80&auto=format&fit=crop"}'::jsonb),
 ('footer', '{"description":"Created by traders, for traders. A structured academy for people serious about the markets.","email":"support@thetradingcube.com","whatsapp":"447757464428"}'::jsonb),
 ('enrollment', '{"inviteOnly":true,"passingScoreDefault":70,"maxQuizAttempts":3}'::jsonb),
-('support', '{"email":"support@thetradingcube.com","whatsapp":"447757464428","whatsappLabel":"WhatsApp the desk"}'::jsonb)
+('support', '{"email":"support@thetradingcube.com","whatsapp":"447757464428","whatsappLabel":"WhatsApp the desk"}'::jsonb),
+('images', '{"logo":"https://hebbkx1anhila5yf.public.blob.vercel-storage.com/WhatsApp%20Image%202026-08-28%20at%2001.07.23-KxSUitIOxLLo5caKphzA7Ia47n2FEi.jpeg","hero":"https://images.unsplash.com/photo-1611974789855-9c2a00d0712a?w=1400&q=80&auto=format&fit=crop","heroTerminal":"https://images.unsplash.com/photo-1642790106117-e829e014aba0?w=900&q=80&auto=format&fit=crop","ctaBand":"https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1400&q=80&auto=format&fit=crop","authBackground":"https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1400&q=80&auto=format&fit=crop","certificateWatermark":"https://images.unsplash.com/photo-1621761191319-c6fb59208040?w=800&q=80&auto=format&fit=crop"}'::jsonb)
 on conflict (key) do update set value = excluded.value, updated_at = now();
 
 -- Marketing stats
@@ -77,10 +78,11 @@ insert into public.marketing_steps (id, number_label, title, body, sort_order) v
 ('b3000001-0000-4000-8000-000000000004', '04', 'Get certified', 'Clear every module in a course and your completion certificate is issued automatically.', 3);
 
 -- Testimonials
-insert into public.testimonials (id, quote, author_name, author_meta, sort_order) values
-('b4000001-0000-4000-8000-000000000001', 'I''d read a dozen books on price action. Nothing stuck until I had to pass a quiz on it. Six weeks in, I finally trade levels instead of guessing at them.', 'Marcus H.', 'Completed Price Action Mastery · 94% avg score', 0),
-('b4000001-0000-4000-8000-000000000002', 'The sequencing is the whole point. I couldn''t skip to the exciting stuff — which is exactly why the risk management actually landed this time.', 'Priya N.', 'Completed Risk Management Fundamentals · 96%', 1),
-('b4000001-0000-4000-8000-000000000003', 'Emailed the team at 11pm about a failed quiz attempt and had a real answer before I woke up. That kind of support is rare.', 'James O.', 'Active student · 4 courses in progress', 2);
+insert into public.testimonials (id, quote, author_name, author_meta, image_url, sort_order) values
+('b4000001-0000-4000-8000-000000000001', 'I''d read a dozen books on price action. Nothing stuck until I had to pass a quiz on it. Six weeks in, I finally trade levels instead of guessing at them.', 'Marcus H.', 'Completed Price Action Mastery · 94% avg score', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80&auto=format&fit=crop', 0),
+('b4000001-0000-4000-8000-000000000002', 'The sequencing is the whole point. I couldn''t skip to the exciting stuff — which is exactly why the risk management actually landed this time.', 'Priya N.', 'Completed Risk Management Fundamentals · 96%', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80&auto=format&fit=crop', 1),
+('b4000001-0000-4000-8000-000000000003', 'Emailed the team at 11pm about a failed quiz attempt and had a real answer before I woke up. That kind of support is rare.', 'James O.', 'Active student · 4 courses in progress', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&q=80&auto=format&fit=crop', 2)
+on conflict (id) do update set quote = excluded.quote, author_meta = excluded.author_meta, image_url = excluded.image_url;
 
 -- FAQ
 insert into public.faq_items (id, question, answer, sort_order) values
@@ -90,13 +92,66 @@ insert into public.faq_items (id, question, answer, sort_order) values
 ('b5000001-0000-4000-8000-000000000004', 'Can I use this on my phone?', 'Yes — the full platform, including video lessons and quizzes, is built to work on mobile as well as desktop.', 3),
 ('b5000001-0000-4000-8000-000000000005', 'Do I get a certificate?', 'Yes. Completing every module and passing every quiz in a course issues a downloadable certificate automatically.', 4);
 
--- Contact page CMS
-insert into public.page_contents (id, slug, title, eyebrow, description, sections, primary_cta_label, primary_cta_href) values
+-- CMS pages (default copy + hero images — admin-editable)
+insert into public.page_contents (id, slug, title, eyebrow, description, hero_image_url, sections, primary_cta_label, primary_cta_href) values
 ('b6000001-0000-4000-8000-000000000001', 'contact', 'Request Access', 'CONTACT THE DESK',
  'Tell us where you''re starting from. Every application is reviewed directly by the Trading Cube team.',
+ 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1400&q=80&auto=format&fit=crop',
  '[{"heading":"Email the desk","body":"support@thetradingcube.com — we respond within one business day."},{"heading":"WhatsApp","body":"Message the desk directly for quick questions about access or the curriculum."}]'::jsonb,
- 'Submit request', '/contact')
-on conflict (slug) do update set title = excluded.title, description = excluded.description, sections = excluded.sections;
+ 'Submit request', '/contact'),
+('b6000001-0000-4000-8000-000000000002', 'about', 'About the Academy', 'BUILT FOR BETTER DECISIONS',
+ 'The Trading Cube Academy turns market curiosity into a structured practice built around process, risk, and review.',
+ 'https://images.unsplash.com/photo-1642790106117-e829e014aba0?w=900&q=80&auto=format&fit=crop',
+ '[{"heading":"Created by traders, for traders.","body":"Learn from a practical framework that respects the work behind consistent execution."},{"heading":"A clear path through complexity.","body":"Move from market foundations to method, risk management, psychology, and assessment."}]'::jsonb,
+ null, null),
+('b6000001-0000-4000-8000-000000000003', 'courses', 'Courses', 'THE LEARNING PATH',
+ 'A focused curriculum for traders building skill through deliberate practice.',
+ 'https://images.unsplash.com/photo-1611974789855-9c2a00d0712a?w=800&q=80&auto=format&fit=crop',
+ '[{"heading":"Foundation","body":"Understand market structure, terminology, and the habits that support clear decisions."},{"heading":"Execution","body":"Develop a repeatable process for planning, entering, managing, and reviewing trades."},{"heading":"Mastery","body":"Test your understanding through modules, quizzes, exams, and certificates."}]'::jsonb,
+ null, null),
+('b6000001-0000-4000-8000-000000000004', 'method', 'Trading Method', 'PROCESS OVER PREDICTION',
+ 'A trading method is a sequence of decisions you can explain, repeat, and improve.',
+ 'https://images.unsplash.com/photo-1611974789855-9c2a00d0712a?w=1400&q=80&auto=format&fit=crop',
+ '[{"heading":"Read context","body":"Start with market structure and the conditions around a setup."},{"heading":"Plan the trade","body":"Define entry, invalidation, risk, and management before execution."}]'::jsonb,
+ null, null),
+('b6000001-0000-4000-8000-000000000005', 'risk', 'Risk Management', 'PROTECT THE ACCOUNT',
+ 'Risk management gives your edge enough time to work.',
+ 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=800&q=80&auto=format&fit=crop',
+ '[{"heading":"Capital first","body":"Position sizing and invalidation matter more than being right on every trade."}]'::jsonb,
+ null, null),
+('b6000001-0000-4000-8000-000000000006', 'psychology', 'Market Psychology', 'THE HUMAN EDGE',
+ 'Build the awareness to recognize pressure, impatience, and overconfidence before they shape a decision.',
+ 'https://images.unsplash.com/photo-1559526324-593bc073d938?w=800&q=80&auto=format&fit=crop',
+ '[{"heading":"Return to process","body":"Use preparation, limits, and review to make discipline practical."}]'::jsonb,
+ null, null),
+('b6000001-0000-4000-8000-000000000007', 'resources', 'Resources', 'OPEN ACCESS',
+ 'Explore public lessons, market thinking, and marketing videos from the academy.',
+ 'https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=1400&q=80&auto=format&fit=crop',
+ '[{"heading":"Marketing library","body":"Public YouTube videos are curated here; member-only course lessons stay in the dashboard."}]'::jsonb,
+ null, null),
+('b6000001-0000-4000-8000-000000000008', 'faq', 'FAQ', 'CLEAR ANSWERS',
+ 'Find practical answers about learning, accounts, assessments, and certificates.',
+ 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1400&q=80&auto=format&fit=crop',
+ '[{"heading":"How do I get access?","body":"Request access above and the desk will follow up directly. Once approved, you''ll get an email invitation to activate your account and set a password."},{"heading":"Do I need prior trading experience?","body":"No. The curriculum starts at Market Structure Basics and assumes nothing — but it moves quickly, so you should be ready to put in real study time."},{"heading":"What happens if I fail a quiz?","body":"You can review the lesson and retry. There''s no penalty for a failed attempt — the module simply stays locked until you clear the passing score."},{"heading":"Can I use this on my phone?","body":"Yes — the full platform, including video lessons and quizzes, is built to work on mobile as well as desktop."},{"heading":"Do I get a certificate?","body":"Yes. Completing every module and passing every quiz in a course issues a downloadable certificate automatically."}]'::jsonb,
+ null, null),
+('b6000001-0000-4000-8000-000000000009', 'privacy', 'Privacy Policy', 'YOUR DATA MATTERS',
+ 'We collect only the information needed to provide accounts, learning progress, assessments, and support.',
+ null,
+ '[{"heading":"Account data","body":"Your email, profile, progress, attempts, and certificates are scoped to your account."}]'::jsonb,
+ null, null),
+('b6000001-0000-4000-8000-000000000010', 'terms', 'Terms of Use', 'LEARN RESPONSIBLY',
+ 'Academy content is educational and does not constitute financial advice or a promise of trading results.',
+ null,
+ '[{"heading":"Responsible learning","body":"Use the material to build understanding and process. Make independent decisions and manage risk responsibly."}]'::jsonb,
+ null, null)
+on conflict (slug) do update set
+  title = excluded.title,
+  eyebrow = excluded.eyebrow,
+  description = excluded.description,
+  hero_image_url = excluded.hero_image_url,
+  sections = excluded.sections,
+  primary_cta_label = excluded.primary_cta_label,
+  primary_cta_href = excluded.primary_cta_href;
 
 -- Courses
 insert into public.courses (id, slug, title, description, tier, status, module_count, lesson_count, enrolled_count, sort_order, published) values
@@ -106,6 +161,14 @@ insert into public.courses (id, slug, title, description, tier, status, module_c
 ('c0010000-0000-4000-8000-000000000004', 'technical-analysis-101', 'Technical Analysis 101', 'Indicators as confirmation, not prediction', 'core', 'live', 5, 22, 156, 3, true),
 ('c0010000-0000-4000-8000-000000000005', 'options-trading-blueprint', 'Options Trading Blueprint', 'Structuring trades beyond spot', 'advanced', 'live', 4, 18, 89, 4, true),
 ('c0010000-0000-4000-8000-000000000006', 'trading-psychology-discipline', 'Trading Psychology & Discipline', 'The desk''s own rules for staying in the game', 'advanced', 'live', 4, 16, 72, 5, true);
+
+-- Course card images (trading-industry Unsplash — admin replaceable)
+update public.courses set image_url = 'https://images.unsplash.com/photo-1642790106117-e829e014aba0?w=800&q=80&auto=format&fit=crop' where slug = 'market-structure-basics';
+update public.courses set image_url = 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?w=800&q=80&auto=format&fit=crop' where slug = 'risk-management-fundamentals';
+update public.courses set image_url = 'https://images.unsplash.com/photo-1611974789855-9c2a00d0712a?w=800&q=80&auto=format&fit=crop' where slug = 'price-action-mastery';
+update public.courses set image_url = 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80&auto=format&fit=crop' where slug = 'technical-analysis-101';
+update public.courses set image_url = 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80&auto=format&fit=crop' where slug = 'options-trading-blueprint';
+update public.courses set image_url = 'https://images.unsplash.com/photo-1559526324-593bc073d938?w=800&q=80&auto=format&fit=crop' where slug = 'trading-psychology-discipline';
 
 -- Price Action Mastery modules
 insert into public.modules (id, course_id, slug, title, sort_order, lesson_count, unlock_after_module_id, published) values

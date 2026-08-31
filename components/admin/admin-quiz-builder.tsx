@@ -1,0 +1,281 @@
+'use client'
+
+import { useMemo, useState } from 'react'
+import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+import { useRealtimeQuery } from '@/lib/hooks/use-realtime-query'
+import { Btn, Eyebrow, LoadingState, Panel, Pill } from '@/components/ui/academy-ui'
+import type { Profile, QuizAttempt, QuizOption } from '@/lib/types/database'
+import { formatDateTime } from '@/lib/utils/datetime'
+
+type QuizQuestion = { id: string; module_id: string; question: string; sort_order: number }
+
+const EMPTY_OPTIONS = () => [
+  { text: '', correct: true },
+  { text: '', correct: false },
+  { text: '', correct: false },
+  { text: '', correct: false },
+]
+
+export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
+  const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null)
+  const [passing, setPassing] = useState<number | null>(null)
+  const [attemptsAllowed, setAttemptsAllowed] = useState<number | null>(null)
+  const [timeLimitMinutes, setTimeLimitMinutes] = useState<number | null>(null)
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [newQuestion, setNewQuestion] = useState('')
+  const [newOptions, setNewOptions] = useState(EMPTY_OPTIONS)
+  const [savingQuestion, setSavingQuestion] = useState(false)
+
+  const fetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
+    const { data: course } = await client.from('courses').select('id,title,slug').eq('slug', courseSlug).maybeSingle()
+    if (!course) return null
+    const { data: modules } = await client.from('modules').select('*').eq('course_id', course.id).order('sort_order')
+    return { course, modules: modules ?? [] }
+  }, [courseSlug])
+
+  const { data, loading } = useRealtimeQuery('modules', fetcher, [courseSlug])
+  const activeModuleId = selectedModuleId ?? data?.modules?.[0]?.id ?? null
+
+  const moduleFetcher = useMemo(() => async (client: ReturnType<typeof createClient>) => {
+    if (!activeModuleId) return null
+    const [{ data: questions }, { data: options }, { data: settings }, { data: mod }, { data: attempts }] = await Promise.all([
+      client.from('quiz_questions').select('*').eq('module_id', activeModuleId).order('sort_order'),
+      client.from('quiz_options').select('*'),
+      client.from('module_quiz_settings').select('*').eq('module_id', activeModuleId).maybeSingle(),
+      client.from('modules').select('*').eq('id', activeModuleId).maybeSingle(),
+      client.from('quiz_attempts').select('*').eq('module_id', activeModuleId).order('created_at', { ascending: false }),
+    ])
+
+    const questionIds = (questions ?? []).map((q: QuizQuestion) => q.id)
+    const optsForModule = (options ?? []).filter((o: QuizOption) => questionIds.includes(o.question_id))
+
+    const userIds = [...new Set((attempts ?? []).map((a: QuizAttempt) => a.user_id))]
+    const { data: profiles } = userIds.length
+      ? await client.from('profiles').select('id,full_name,email').in('id', userIds)
+      : { data: [] as Profile[] }
+
+    const profileMap = Object.fromEntries(((profiles ?? []) as Profile[]).map((p) => [p.id, p]))
+
+    return {
+      module: mod,
+      questions: (questions ?? []) as QuizQuestion[],
+      options: optsForModule as QuizOption[],
+      settings,
+      attempts: ((attempts ?? []) as QuizAttempt[]).map((a) => ({
+        ...a,
+        student: profileMap[a.user_id] ?? null,
+      })),
+    }
+  }, [activeModuleId])
+
+  const { data: moduleData, loading: moduleLoading, reload: reloadModule } = useRealtimeQuery(
+    'quiz_questions',
+    moduleFetcher,
+    [activeModuleId],
+  )
+
+  if (loading) return <LoadingState />
+  if (!data?.course) return <div className="content-pad">Course not found.</div>
+  if (!data.modules.length) return <div className="content-pad">No modules found.</div>
+
+  const mod = moduleData?.module
+  const questions = moduleData?.questions ?? []
+  const options = moduleData?.options ?? []
+  const settings = moduleData?.settings
+  const attempts = moduleData?.attempts ?? []
+
+  const optionsByQuestion = options.reduce<Record<string, QuizOption[]>>((acc, o) => {
+    acc[o.question_id] = [...(acc[o.question_id] ?? []), o]
+    return acc
+  }, {})
+
+  const saveSettings = async () => {
+    if (!mod) return
+    const score = passing ?? settings?.passing_score ?? 70
+    const allowed = attemptsAllowed ?? settings?.attempts_allowed ?? 3
+    const mins = timeLimitMinutes ?? (settings?.time_limit_seconds ? Math.round(settings.time_limit_seconds / 60) : null)
+    const time_limit_seconds = mins && mins > 0 ? mins * 60 : null
+    await createClient().from('module_quiz_settings').upsert({
+      module_id: mod.id,
+      passing_score: score,
+      attempts_allowed: allowed,
+      time_limit_seconds,
+      question_order: settings?.question_order ?? 'sequential',
+    })
+    setPassing(null)
+    setAttemptsAllowed(null)
+    setTimeLimitMinutes(null)
+    reloadModule()
+  }
+
+  const addQuestion = async () => {
+    if (!mod || !newQuestion.trim()) return
+    const filled = newOptions.filter((o) => o.text.trim())
+    if (filled.length < 2) return
+    if (!filled.some((o) => o.correct)) return
+
+    setSavingQuestion(true)
+    try {
+      const client = createClient()
+      const { data: q, error } = await client.from('quiz_questions').insert({
+        module_id: mod.id,
+        question: newQuestion.trim(),
+        sort_order: questions.length,
+      }).select('*').single()
+
+      if (error || !q) return
+
+      await client.from('quiz_options').insert(
+        filled.map((o, i) => ({
+          question_id: q.id,
+          option_text: o.text.trim(),
+          is_correct: o.correct,
+          sort_order: i,
+        })),
+      )
+
+      setNewQuestion('')
+      setNewOptions(EMPTY_OPTIONS())
+      setShowAddForm(false)
+      reloadModule()
+    } finally {
+      setSavingQuestion(false)
+    }
+  }
+
+  const deleteQuestion = async (questionId: string) => {
+    await createClient().from('quiz_questions').delete().eq('id', questionId)
+    reloadModule()
+  }
+
+  const currentTimeMins = timeLimitMinutes ?? (settings?.time_limit_seconds ? Math.round(settings.time_limit_seconds / 60) : 0)
+
+  return (
+    <div className="content-pad max-w-3xl">
+      <Link href={`/admin/courses/${courseSlug}`} className="mono muted text-xs">← {data.course.title}</Link>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <Eyebrow>Quiz & examination builder</Eyebrow>
+          <p className="muted mt-1 text-sm">Create questions, set timers, and review student submissions. Students see quizzes live once questions are saved.</p>
+        </div>
+        <Btn size="sm" onClick={saveSettings}>Save settings</Btn>
+      </div>
+
+      <Panel className="mt-6 space-y-4 p-6">
+        <div className="input-group">
+          <label>Module</label>
+          <select className="input" value={activeModuleId ?? ''} onChange={(e) => setSelectedModuleId(e.target.value)}>
+            {data.modules.map((m: { id: string; title: string }) => (
+              <option key={m.id} value={m.id}>{m.title}</option>
+            ))}
+          </select>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="input-group">
+            <label>Passing score (%)</label>
+            <input className="input" type="number" min={1} max={100} defaultValue={settings?.passing_score ?? 70} onChange={(e) => setPassing(Number(e.target.value))} />
+          </div>
+          <div className="input-group">
+            <label>Attempts allowed</label>
+            <input className="input" type="number" min={1} max={10} defaultValue={settings?.attempts_allowed ?? 3} onChange={(e) => setAttemptsAllowed(Number(e.target.value))} />
+          </div>
+          <div className="input-group">
+            <label>Time limit (minutes)</label>
+            <input className="input" type="number" min={0} placeholder="0 = no timer" defaultValue={currentTimeMins || ''} onChange={(e) => setTimeLimitMinutes(Number(e.target.value))} />
+          </div>
+        </div>
+        <p className="muted text-xs">Timed exams use a server-synced countdown and auto-submit when time runs out.</p>
+      </Panel>
+
+      <div className="mt-8 flex items-center justify-between gap-4">
+        <Eyebrow>Questions ({questions.length})</Eyebrow>
+        <Btn size="sm" variant="ghost" onClick={() => setShowAddForm((v) => !v)}>{showAddForm ? 'Cancel' : '+ Add question'}</Btn>
+      </div>
+
+      {showAddForm && (
+        <Panel className="mt-4 space-y-4 p-6">
+          <div className="input-group">
+            <label>Question text</label>
+            <textarea className="input min-h-[80px]" value={newQuestion} onChange={(e) => setNewQuestion(e.target.value)} placeholder="What defines a valid higher-high in market structure?" />
+          </div>
+          <p className="mono muted text-[11px]">Answer options (mark one correct)</p>
+          {newOptions.map((opt, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <input type="radio" name="correct-option" checked={opt.correct} onChange={() => setNewOptions(newOptions.map((o, j) => ({ ...o, correct: j === i })))} className="accent-yellow" />
+              <input className="input flex-1" value={opt.text} onChange={(e) => setNewOptions(newOptions.map((o, j) => j === i ? { ...o, text: e.target.value } : o))} placeholder={`Option ${i + 1}`} />
+            </div>
+          ))}
+          <Btn size="sm" onClick={addQuestion} disabled={savingQuestion || !newQuestion.trim()}>
+            {savingQuestion ? 'Saving…' : 'Save question'}
+          </Btn>
+        </Panel>
+      )}
+
+      {moduleLoading && !moduleData ? <LoadingState /> : (
+        <div className="mt-4 space-y-3">
+          {questions.map((q, i) => (
+            <Panel key={q.id} className="p-5">
+              <div className="mb-3 flex items-start justify-between gap-4">
+                <p className="mono muted text-xs">Question {i + 1}</p>
+                <button type="button" className="mono text-xs text-red-400 hover:underline" onClick={() => void deleteQuestion(q.id)}>Delete</button>
+              </div>
+              <p className="mb-4 text-sm font-medium">{q.question}</p>
+              <ul className="space-y-2">
+                {(optionsByQuestion[q.id] ?? []).sort((a, b) => a.sort_order - b.sort_order).map((o) => (
+                  <li key={o.id} className={`rounded border px-3 py-2 text-sm ${o.is_correct ? 'border-green/40 bg-green/5 text-green' : 'border-[var(--border-soft)]'}`}>
+                    {o.option_text}{o.is_correct ? ' ✓' : ''}
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          ))}
+          {!questions.length && <p className="muted text-sm">No questions yet — add one above. Students will see the quiz once at least one question exists.</p>}
+        </div>
+      )}
+
+      <Eyebrow className="mt-10 mb-4">Student submissions ({attempts.length})</Eyebrow>
+      <p className="muted mb-4 text-sm">Multiple-choice answers are auto-marked. Review each attempt below — score, pass/fail, and selected answers are stored in Supabase.</p>
+      <div className="space-y-4">
+        {attempts.map((attempt) => (
+          <Panel key={attempt.id} className="p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="font-semibold">{(attempt as QuizAttempt & { student: Profile | null }).student?.full_name ?? 'Student'}</p>
+                <p className="mono muted text-xs">{(attempt as QuizAttempt & { student: Profile | null }).student?.email}</p>
+              </div>
+              <div className="text-right">
+                <Pill tone={attempt.passed ? 'green' : attempt.timed_out ? 'red' : undefined}>{attempt.passed ? 'Passed' : attempt.timed_out ? 'Timed out' : 'Failed'}</Pill>
+                <p className="mono mt-2 text-lg text-yellow">{attempt.score}%</p>
+                <p className="mono muted text-[11px]">Attempt {attempt.attempt_number} · {formatDateTime(attempt.completed_at ?? attempt.started_at)}</p>
+              </div>
+            </div>
+            {attempt.status === 'completed' || attempt.status === 'timed_out' ? (
+              <div className="mt-4 space-y-3 border-t border-[var(--border-soft)] pt-4">
+                {questions.map((q, qi) => {
+                  const selectedId = (attempt.answers as Record<string, string>)?.[q.id]
+                  const qOpts = optionsByQuestion[q.id] ?? []
+                  const selected = qOpts.find((o) => o.id === selectedId)
+                  const correct = qOpts.find((o) => o.is_correct)
+                  const isRight = selected?.id === correct?.id
+                  return (
+                    <div key={q.id} className="text-sm">
+                      <p className="mono muted mb-1 text-[11px]">Q{qi + 1}</p>
+                      <p className="mb-1">{q.question}</p>
+                      <p className={isRight ? 'text-green' : 'text-red'}>
+                        Student: {selected?.option_text ?? '—'} {isRight ? '✓' : `✗ (correct: ${correct?.option_text ?? '—'})`}
+                      </p>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="muted mt-3 text-sm">In progress…</p>
+            )}
+          </Panel>
+        ))}
+        {!attempts.length && <p className="muted text-sm">No student attempts for this module yet.</p>}
+      </div>
+    </div>
+  )
+}

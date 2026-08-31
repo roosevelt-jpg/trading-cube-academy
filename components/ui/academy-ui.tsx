@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { companyName, logoBannerSrc, logoIconSrc } from '@/lib/utils/site'
+import { resolveSupportFromSettings, supportContactUrl } from '@/lib/support/contact'
 import type { SiteSettings } from '@/lib/types/database'
 
 type LogoProps = {
@@ -57,6 +58,8 @@ export function Btn({
   variant = 'primary',
   size,
   href,
+  target,
+  rel,
   onClick,
   type = 'button',
   disabled,
@@ -66,12 +69,18 @@ export function Btn({
   variant?: 'primary' | 'ghost' | 'danger'
   size?: 'sm'
   href?: string
+  target?: string
+  rel?: string
   onClick?: () => void
   type?: 'button' | 'submit'
   disabled?: boolean
 }) {
   const cls = cn('btn', variant === 'primary' && 'btn-primary', variant === 'ghost' && 'btn-ghost', variant === 'danger' && 'btn-danger', size === 'sm' && 'btn-sm', className)
-  if (href) return <Link href={href} className={cls}>{children}</Link>
+  if (href) {
+    const external = href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('tel:')
+    if (external) return <a href={href} className={cls} target={target} rel={rel}>{children}</a>
+    return <Link href={href} className={cls}>{children}</Link>
+  }
   return <button type={type} className={cls} onClick={onClick} disabled={disabled}>{children}</button>
 }
 
@@ -111,8 +120,9 @@ export function Candles({ total, done = 0, current }: { total: number; done?: nu
 }
 
 export function HelpBlock({ settings }: { settings?: SiteSettings }) {
-  const email = settings?.support?.email ?? settings?.footer?.email ?? 'support@thetradingcube.com'
-  const wa = settings?.support?.whatsapp ?? settings?.footer?.whatsapp ?? '447757464428'
+  const contact = resolveSupportFromSettings(settings)
+  const email = contact.email
+  const waHref = supportContactUrl(contact, 'lesson')
   return (
     <Panel className="help-block">
       <div>
@@ -120,7 +130,7 @@ export function HelpBlock({ settings }: { settings?: SiteSettings }) {
         <p className="text-[13px] text-muted">Stuck on this lesson? Reach the Trading Cube team directly.</p>
       </div>
       <div className="flex flex-wrap gap-3">
-        <Btn variant="ghost" size="sm" href={`https://wa.me/${wa.replace(/\D/g, '')}`}>💬 WhatsApp Us</Btn>
+        <Btn variant="ghost" size="sm" href={waHref} target="_blank" rel="noopener noreferrer">💬 {contact.whatsappLabel}</Btn>
         <Btn variant="ghost" size="sm" href={`mailto:${email}`}>✉ Email Support</Btn>
       </div>
     </Panel>

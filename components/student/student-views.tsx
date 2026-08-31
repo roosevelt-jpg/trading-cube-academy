@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { useRealtimeQuery } from '@/lib/hooks/use-realtime-query'
 import { useQuizTimer } from '@/lib/hooks/use-quiz-timer'
+import { useSupportContact } from '@/lib/hooks/use-support-contact'
+import { supportContactUrl } from '@/lib/support/contact'
 import { Btn, Candles, Eyebrow, HelpBlock, LoadingState, Logo, Panel, Pill, ProgressTrack } from '@/components/ui/academy-ui'
 import { formatDateTime } from '@/lib/utils/datetime'
 import type { Course, Lesson, Module, ModuleProgress, Profile, QuizAttempt, SiteSettings } from '@/lib/types/database'
@@ -438,6 +440,8 @@ export function StudentSupportView({ profile }: { profile: Profile }) {
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
   const [sent, setSent] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const contact = useSupportContact()
 
   const fetcher = useMemo(async (client: ReturnType<typeof createClient>) => {
     const { data } = await client.from('support_tickets').select('*').eq('user_id', profile.id).order('created_at', { ascending: false })
@@ -446,25 +450,45 @@ export function StudentSupportView({ profile }: { profile: Profile }) {
   const { data: tickets, loading, reload } = useRealtimeQuery('support_tickets', fetcher, [profile.id])
 
   const submit = async () => {
-    const client = createClient()
-    await client.from('support_tickets').insert({ user_id: profile.id, student_name: profile.full_name, subject, message, channel: 'email' })
-    setSubject('')
-    setMessage('')
-    setSent(true)
-    reload()
+    setSubmitting(true)
+    try {
+      const res = await fetch('/api/support/ticket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject, message }),
+      })
+      if (res.ok) {
+        setSubject('')
+        setMessage('')
+        setSent(true)
+        reload()
+      }
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   if (loading) return <LoadingState />
+
+  const waHref = supportContactUrl(contact, 'support', profile)
 
   return (
     <div className="content-pad max-w-2xl">
       <Eyebrow>Support</Eyebrow>
       <h1 className="h1 mt-2 text-3xl">Talk to the desk</h1>
+      <Panel className="mt-6 flex flex-wrap items-center justify-between gap-4 p-6">
+        <div>
+          <p className="font-semibold">WhatsApp the desk</p>
+          <p className="muted mt-1 text-sm">Fastest route for lesson help and account questions.</p>
+          {contact.apiEnabled && <p className="mono mt-2 text-[11px] text-green">WhatsApp Business API connected — desk alerts are live.</p>}
+        </div>
+        <Btn variant="ghost" href={waHref} target="_blank" rel="noopener noreferrer">💬 {contact.whatsappLabel}</Btn>
+      </Panel>
       <Panel className="mt-6 space-y-4 p-6">
         <div className="input-group"><label>Subject</label><input className="input" value={subject} onChange={(e) => setSubject(e.target.value)} /></div>
         <div className="input-group"><label>Message</label><textarea className="input min-h-[120px]" value={message} onChange={(e) => setMessage(e.target.value)} /></div>
-        {sent && <p className="text-sm text-green">Ticket submitted.</p>}
-        <Btn onClick={submit} disabled={!subject || !message}>Send message</Btn>
+        {sent && <p className="text-sm text-green">Ticket submitted. The desk has been notified.</p>}
+        <Btn onClick={submit} disabled={!subject || !message || submitting}>{submitting ? 'Sending…' : 'Send message'}</Btn>
       </Panel>
       <Eyebrow className="mt-8 mb-4">Your tickets</Eyebrow>
       <div className="space-y-3">

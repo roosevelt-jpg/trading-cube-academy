@@ -605,12 +605,20 @@ export function AdminSettingsView({ initialSettings }: { initialSettings?: SiteS
   const hp = { ...settings?.homepage, ...(draft.homepage as object) }
   const branding = { ...settings?.branding, ...(draft.branding as object) }
   const footer = { ...settings?.footer, ...(draft.footer as object) }
+  const support = {
+    ...settings?.support,
+    ...(draft.support as object),
+    email: (draft.support as { email?: string } | undefined)?.email ?? footer.email ?? settings?.support?.email,
+    whatsapp: (draft.support as { whatsapp?: string } | undefined)?.whatsapp ?? footer.whatsapp ?? settings?.support?.whatsapp,
+  }
 
   const save = async () => {
     const client = createClient()
+    const syncedFooter = { ...footer, email: support.email ?? footer.email, whatsapp: support.whatsapp ?? footer.whatsapp }
     await client.from('site_settings').upsert({ key: 'homepage', value: hp })
     await client.from('site_settings').upsert({ key: 'branding', value: branding })
-    await client.from('site_settings').upsert({ key: 'footer', value: footer })
+    await client.from('site_settings').upsert({ key: 'footer', value: syncedFooter })
+    await client.from('site_settings').upsert({ key: 'support', value: support })
     if (draft.images) await client.from('site_settings').upsert({ key: 'images', value: draft.images })
     setDraft({})
     reload()
@@ -652,7 +660,10 @@ export function AdminSettingsView({ initialSettings }: { initialSettings?: SiteS
       <Panel className="mt-6 space-y-4 p-6">
         <Eyebrow>Footer & support</Eyebrow>
         <div className="input-group"><label>Footer description</label><textarea className="input" defaultValue={footer.description} onChange={(e) => setDraft({ ...draft, footer: { ...footer, description: e.target.value } })} /></div>
-        <div className="input-group"><label>Support email</label><input className="input" defaultValue={footer.email} onChange={(e) => setDraft({ ...draft, footer: { ...footer, email: e.target.value } })} /></div>
+        <div className="input-group"><label>Support email</label><input className="input" defaultValue={support.email ?? footer.email} onChange={(e) => setDraft({ ...draft, support: { ...support, email: e.target.value }, footer: { ...footer, email: e.target.value } })} /></div>
+        <div className="input-group"><label>Support WhatsApp number</label><input className="input" defaultValue={support.whatsapp ?? footer.whatsapp} onChange={(e) => setDraft({ ...draft, support: { ...support, whatsapp: e.target.value }, footer: { ...footer, whatsapp: e.target.value } })} placeholder="447757464428" /></div>
+        <div className="input-group"><label>WhatsApp button label</label><input className="input" defaultValue={support.whatsappLabel ?? 'WhatsApp the desk'} onChange={(e) => setDraft({ ...draft, support: { ...support, whatsappLabel: e.target.value } })} /></div>
+        <p className="muted text-xs">This number powers the floating WhatsApp button on the homepage and student dashboard. Connect the WhatsApp Business API under Integrations for automated onboarding alerts.</p>
       </Panel>
 
       <CourseImageEditor onSave={updateCourseImage} />

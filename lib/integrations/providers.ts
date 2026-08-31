@@ -52,8 +52,10 @@ export const INTEGRATION_PROVIDERS: IntegrationProviderDef[] = [
   {
     provider: 'whatsapp',
     label: 'WhatsApp Business API',
-    description: 'Desk support messages and access-request notifications.',
+    description: 'Desk support messages, access-request alerts, and student onboarding notifications.',
     fields: [
+      { key: 'business_phone', label: 'Business WhatsApp number (E.164, digits only)', placeholder: '447757464428' },
+      { key: 'notify_phone', label: 'Admin notify number (E.164)', placeholder: '447757464428' },
       { key: 'phone_number_id', label: 'Phone number ID' },
       { key: 'access_token', label: 'Access token', secret: true },
     ],

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Logo } from '@/components/ui/academy-ui'
 import { LiveClock } from '@/components/ui/live-clock'
 import { ProfileMenu } from '@/components/ui/profile-menu'
+import { WhatsAppFloatButton } from '@/components/ui/whatsapp-float-button'
 import type { Profile, SiteSettings } from '@/lib/types/database'
 import { cn } from '@/lib/utils'
 
@@ -51,6 +52,7 @@ export function StudentShell({
           </div>
         </div>
         {children}
+        <WhatsAppFloatButton settings={settings} context="student" profile={profile} />
       </div>
     </div>
   )

@@ -319,7 +319,7 @@ insert into public.integration_settings (provider, label, enabled, public_value)
 ('youtube', 'YouTube Data API', false, '{}'::jsonb),
 ('blob', 'Vercel Blob Storage', false, '{}'::jsonb),
 ('email', 'Transactional Email', false, '{"provider_name":"resend","from_address":"support@thetradingcube.com"}'::jsonb),
-('whatsapp', 'WhatsApp Business API', false, '{"phone_number_id":""}'::jsonb),
+('whatsapp', 'WhatsApp Business API', false, '{"business_phone":"447757464428","notify_phone":"447757464428","phone_number_id":""}'::jsonb),
 ('openai', 'OpenAI (optional)', false, '{"model":"gpt-4o-mini"}'::jsonb)
 on conflict (provider) do update set label = excluded.label;
 

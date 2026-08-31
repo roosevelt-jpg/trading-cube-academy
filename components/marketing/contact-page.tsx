@@ -2,9 +2,9 @@
 
 import { FormEvent, useState } from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 import { getSupabaseEnv } from '@/lib/supabase/env'
 import { Btn, Eyebrow, Logo, Panel } from '@/components/ui/academy-ui'
+import { WhatsAppFloatButton } from '@/components/ui/whatsapp-float-button'
 import type { PageContent, SiteSettings } from '@/lib/types/database'
 import { whatsappUrl } from '@/lib/utils/site'
 
@@ -25,9 +25,16 @@ export function ContactPageView({ settings, page }: { settings: SiteSettings; pa
       return
     }
     setStatus('loading')
-    const client = createClient()
-    const { error } = await client.from('access_requests').insert({ full_name: name.trim(), email: email.trim().toLowerCase(), message: message.trim() })
-    setStatus(error ? 'error' : 'done')
+    try {
+      const res = await fetch('/api/access-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ full_name: name.trim(), email: email.trim().toLowerCase(), message: message.trim() }),
+      })
+      setStatus(res.ok ? 'done' : 'error')
+    } catch {
+      setStatus('error')
+    }
   }
 
   return (
@@ -86,6 +93,7 @@ export function ContactPageView({ settings, page }: { settings: SiteSettings; pa
           </p>
         </Panel>
       </div>
+      <WhatsAppFloatButton settings={settings} context="homepage" />
     </main>
   )
 }

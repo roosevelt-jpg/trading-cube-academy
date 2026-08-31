@@ -10,7 +10,7 @@ const PROVIDERS = [
   { provider: 'youtube', label: 'YouTube Data API', public_value: {} },
   { provider: 'blob', label: 'Vercel Blob Storage', public_value: {} },
   { provider: 'email', label: 'Transactional Email', public_value: { provider_name: 'resend', from_address: 'support@thetradingcube.com' } },
-  { provider: 'whatsapp', label: 'WhatsApp Business API', public_value: { phone_number_id: '' } },
+  { provider: 'whatsapp', label: 'WhatsApp Business API', public_value: { business_phone: '447757464428', notify_phone: '447757464428', phone_number_id: '' } },
   { provider: 'openai', label: 'OpenAI (optional)', public_value: { model: 'gpt-4o-mini' } },
 ]
 

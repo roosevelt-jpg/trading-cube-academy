@@ -11,6 +11,7 @@ import { Btn, Eyebrow, Logo, Panel } from '@/components/ui/academy-ui'
 import type { SiteSettings } from '@/lib/types/database'
 import { tierLabel, whatsappUrl } from '@/lib/utils/site'
 import { FaqSection } from '@/components/marketing/faq-section'
+import { WhatsAppFloatButton } from '@/components/ui/whatsapp-float-button'
 
 export function MarketingHomepageView({ initialData }: { initialData: MarketingBundle }) {
   const [data, setData] = useState(initialData)
@@ -254,9 +255,7 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
         </div>
       </footer>
 
-      <a href={whatsappUrl(settings.footer?.whatsapp, 'Hello Trading Cube Academy')} target="_blank" rel="noreferrer" className="btn btn-primary btn-sm fixed bottom-5 right-5 z-50 shadow-lg">
-        💬 Chat with us
-      </a>
+      <WhatsAppFloatButton settings={settings} context="homepage" />
     </main>
   )
 }

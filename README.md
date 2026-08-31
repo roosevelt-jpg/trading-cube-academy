@@ -1,45 +1,115 @@
 # The Trading Cube Academy
 
-A structured trading education site: public academy pages, member login, student dashboard, and an admin console.
+A deployment-ready CMS/LMS for structured trading education. All marketing copy, courses, lessons, videos, quizzes, and settings are managed through the admin dashboard and stored in Supabase with realtime sync.
 
-This workspace is a copy of [roosevelt-jpg/trading-cube-academy](https://github.com/roosevelt-jpg/trading-cube-academy). The original project was built with [Next.js](https://nextjs.org) and [v0](https://v0.app).
+## Stack
 
-[Continue working on v0 →](https://v0.app/chat/projects/prj_OBRDa3w9jBZ4nZS7zEc4P4cTANjM)
+- **Next.js 16** (App Router)
+- **Supabase** (Auth, Postgres, Row Level Security, Realtime)
+- **Tailwind CSS 4** (mockup-aligned design system)
+- **Vercel Blob** (optional course material uploads)
 
-## What’s included
+## Features
 
-- Marketing homepage with academy, method, and support sections
-- CMS-style pages (`/about`, `/courses`, `/method`, `/risk`, `/psychology`, `/resources`, `/contact`, `/faq`, `/privacy`, `/terms`)
-- Member login and signup
-- Student and admin dashboards (live data when Supabase is configured)
+### Marketing site
+- Homepage with hero, stats, pillars, curriculum, video marquee, how-it-works, testimonials, FAQ, and CTA
+- Contact / request access form (writes to `access_requests`)
+- All content editable via admin → Settings and CMS tables
 
-Public pages still render with built-in fallback content if Supabase keys are missing. Auth, dashboards, and file uploads need a Supabase project.
+### Student dashboard
+- Dashboard with resume lesson, stats, course progress, activity feed
+- Course overview with sequential module unlock
+- Video and reading lessons with progress tracking
+- Module quizzes with pass/fail and attempt logging
+- Certificates, profile, and support tickets
 
-## Run locally
+### Admin dashboard
+- Platform overview and activity feed
+- Course management (modules, content editor, video IDs, quiz builder)
+- Student list and detail with progress
+- Support inbox
+- Academy settings (homepage copy, branding)
+
+## Setup
+
+### 1. Supabase project
+
+Create a project at [supabase.com](https://supabase.com), then run:
+
+```bash
+# In Supabase SQL Editor, run in order:
+# supabase/migrations/001_schema.sql
+# supabase/seed.sql
+```
+
+Or with the Supabase CLI:
+
+```bash
+supabase db push
+psql $DATABASE_URL -f supabase/seed.sql
+```
+
+### 2. Environment variables
+
+Copy `.env.example` to `.env.local`:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+Optional for material uploads:
+
+```env
+BLOB_READ_WRITE_TOKEN=vercel_blob_token
+```
+
+### 3. Install and run
 
 ```bash
 pnpm install
-cp .env.example .env.local
-pnpm dev --port 43123
+pnpm dev
 ```
 
-Open [http://localhost:43123](http://localhost:43123).
+Open [http://localhost:43123](http://localhost:43123) (or your chosen port).
 
-You can also use `npm install` and `npm run dev`.
+### 4. Seeded accounts
 
-## Environment
+After running `seed.sql`:
 
-Copy `.env.example` to `.env.local` and set:
+| Role    | Email                    | Password           |
+|---------|--------------------------|--------------------|
+| Admin   | admin@thetradingcube.com | TradingCube2026!   |
+| Student | m.harrison@email.com     | TradingCube2026!   |
 
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` (or `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`)
+**Change these passwords before production deployment.**
 
-Optional:
+## Deployment
 
-- `NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL` for local auth email redirects
-- Vercel Blob credentials if you want admin material uploads
+1. Apply migrations and seed to your production Supabase instance
+2. Set environment variables in Vercel (or your host)
+3. `pnpm build && pnpm start`
+4. Disable email confirmation in Supabase Auth for invite-only flows, or configure SMTP
 
-## Learn more
+## Project structure
 
-- [Next.js documentation](https://nextjs.org/docs)
-- [v0 documentation](https://v0.app/docs)
+```
+app/
+  page.tsx              # Marketing homepage
+  contact/              # Request access
+  login|signup|forgot-password/
+  student/              # Student LMS routes
+  admin/                # Admin CMS routes
+components/
+  marketing/            # Public site
+  student/              # Student views
+  admin/                # Admin CMS views
+  layouts/              # Dashboard shells
+supabase/
+  migrations/001_schema.sql
+  seed.sql
+```
+
+## Realtime
+
+Tables are published to `supabase_realtime`. Client hooks in `lib/hooks/use-realtime-query.ts` subscribe to changes so admin edits appear live on the marketing site and student dashboards without refresh.

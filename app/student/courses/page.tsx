@@ -1,7 +1,7 @@
-import { StudentDashboard } from '@/components/student/student-dashboard'
+import { StudentCoursesList } from '@/components/student/student-dashboard'
 import { requireStudent } from '@/lib/auth/guards'
 
 export default async function Page() {
   const { profile } = await requireStudent()
-  return <StudentDashboard profile={profile} />
+  return <StudentCoursesList profile={profile} />
 }

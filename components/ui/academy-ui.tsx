@@ -1,0 +1,127 @@
+'use client'
+
+import Link from 'next/link'
+import { cn } from '@/lib/utils'
+import { companyName, logoSrc } from '@/lib/utils/site'
+import type { SiteSettings } from '@/lib/types/database'
+
+export function Logo({ settings, className }: { settings?: SiteSettings; className?: string }) {
+  return (
+    <Link href="/" className={cn('logo flex items-center gap-2.5', className)}>
+      <img src={logoSrc(settings)} alt={`${companyName(settings)} logo`} className="mark h-6 w-auto object-contain" />
+      <span className="font-display text-[15px] font-bold tracking-wide">{companyName(settings)}</span>
+    </Link>
+  )
+}
+
+export function Panel({
+  children,
+  className,
+  sm,
+}: {
+  children: React.ReactNode
+  className?: string
+  sm?: boolean
+}) {
+  return <div className={cn('panel', sm && 'panel-sm', className)}>{children}</div>
+}
+
+export function Eyebrow({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <p className={cn('eyebrow', className)}>{children}</p>
+}
+
+export function Btn({
+  children,
+  className,
+  variant = 'primary',
+  size,
+  href,
+  onClick,
+  type = 'button',
+  disabled,
+}: {
+  children: React.ReactNode
+  className?: string
+  variant?: 'primary' | 'ghost' | 'danger'
+  size?: 'sm'
+  href?: string
+  onClick?: () => void
+  type?: 'button' | 'submit'
+  disabled?: boolean
+}) {
+  const cls = cn('btn', variant === 'primary' && 'btn-primary', variant === 'ghost' && 'btn-ghost', variant === 'danger' && 'btn-danger', size === 'sm' && 'btn-sm', className)
+  if (href) return <Link href={href} className={cls}>{children}</Link>
+  return <button type={type} className={cls} onClick={onClick} disabled={disabled}>{children}</button>
+}
+
+export function Pill({ children, className, tone }: { children: React.ReactNode; className?: string; tone?: 'yellow' | 'green' | 'red' }) {
+  return <span className={cn('pill', tone === 'yellow' && 'pill-yellow', tone === 'green' && 'pill-green', tone === 'red' && 'pill-red', className)}>{children}</span>
+}
+
+export function ProgressTrack({ value, green }: { value: number; green?: boolean }) {
+  return (
+    <div className="progress-track">
+      <div className="progress-fill" style={{ width: `${Math.min(100, Math.max(0, value))}%`, background: green ? 'var(--green)' : undefined }} />
+    </div>
+  )
+}
+
+export function Avatar({ initials, size = 38 }: { initials: string; size?: number }) {
+  return (
+    <div className="avatar" style={{ width: size, height: size, flex: `0 0 ${size}px`, fontSize: size < 32 ? 11 : 13 }}>
+      {initials}
+    </div>
+  )
+}
+
+export function Candles({ total, done = 0, current }: { total: number; done?: number; current?: boolean }) {
+  const heights = [14, 22, 10, 18, 12, 24, 20, 16]
+  return (
+    <div className="candles">
+      {Array.from({ length: total }).map((_, i) => (
+        <div
+          key={i}
+          className={cn('candle', i < done ? 'done' : i === done && current ? 'current' : 'locked')}
+          style={{ height: `${heights[i % heights.length]}px` }}
+        />
+      ))}
+    </div>
+  )
+}
+
+export function HelpBlock({ settings }: { settings?: SiteSettings }) {
+  const email = settings?.support?.email ?? settings?.footer?.email ?? 'support@thetradingcube.com'
+  const wa = settings?.support?.whatsapp ?? settings?.footer?.whatsapp ?? '447757464428'
+  return (
+    <Panel className="help-block">
+      <div>
+        <Eyebrow className="mb-1.5">Need More Help?</Eyebrow>
+        <p className="text-[13px] text-muted">Stuck on this lesson? Reach the Trading Cube team directly.</p>
+      </div>
+      <div className="flex flex-wrap gap-3">
+        <Btn variant="ghost" size="sm" href={`https://wa.me/${wa.replace(/\D/g, '')}`}>💬 WhatsApp Us</Btn>
+        <Btn variant="ghost" size="sm" href={`mailto:${email}`}>✉ Email Support</Btn>
+      </div>
+    </Panel>
+  )
+}
+
+export function ConfigRequired() {
+  return (
+    <main className="flex min-h-screen items-center justify-center p-8">
+      <Panel className="max-w-md p-10 text-center">
+        <Eyebrow className="mb-3">Configuration required</Eyebrow>
+        <h1 className="h2 text-xl">Supabase not connected</h1>
+        <p className="mt-3 text-sm text-muted">Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local, run migrations and seed.sql, then restart the dev server.</p>
+      </Panel>
+    </main>
+  )
+}
+
+export function LoadingState({ label = 'Loading…' }: { label?: string }) {
+  return (
+    <div className="flex min-h-[40vh] items-center justify-center">
+      <p className="mono text-sm text-muted">{label}</p>
+    </div>
+  )
+}

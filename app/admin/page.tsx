@@ -1,5 +1,5 @@
-import { LiveDashboard } from '@/components/live-dashboard'
+import { AdminDashboardView } from '@/components/admin/admin-views'
 
-export default function AdminPage() {
-  return <LiveDashboard role="admin" />
+export default function Page() {
+  return <AdminDashboardView />
 }

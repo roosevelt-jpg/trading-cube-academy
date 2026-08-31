@@ -1,5 +1,7 @@
-import TradingCubeHome from '@/components/trading-cube-home'
+import { MarketingHomepage } from '@/components/marketing/marketing-homepage'
+
+export const dynamic = 'force-dynamic'
 
 export default function Page() {
-  return <TradingCubeHome />
+  return <MarketingHomepage />
 }

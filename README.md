@@ -167,6 +167,22 @@ GITHUB_TOKEN=ghp_xxx FORCE_PUSH=1 ./scripts/publish-to-github.sh
 
 Alternatively, connect GitHub in [Cursor Integrations](https://cursor.com/dashboard?tab=integrations) with write access to the repo, add `GITHUB_TOKEN` to your Cloud Agent environment secrets, then ask a cloud agent to push.
 
+### Deploy directly to Vercel (skip GitHub)
+
+If GitHub push is blocked, deploy from the CLI with a [Vercel access token](https://vercel.com/account/tokens):
+
+```bash
+export VERCEL_TOKEN=vcp_...
+export VERCEL_ORG_ID=team_...          # Team ID from Vercel → Settings
+export VERCEL_PROJECT_ID=prj_...       # Project ID from trading-cube-academy → Settings → General
+chmod +x scripts/deploy-vercel.sh
+./scripts/deploy-vercel.sh
+```
+
+Add those three variables to **Cloud Agent environment secrets** and ask the agent to run the script — it deploys to production and updates `https://tca.myflynai.com` if the domain is already on that project.
+
+**One-off preview (no token):** `npx vercel deploy --temporary --yes` uploads a build that expires in ~1 hour; use the claim link Vercel prints to attach it to your account.
+
 ### Vercel setup
 
 1. Apply migrations and seed to your production Supabase instance

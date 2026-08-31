@@ -17,3 +17,4 @@ supabase/.temp/
 .DS_Store
 AGENTS.md
 CLAUDE.md
+.vercel

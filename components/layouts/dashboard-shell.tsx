@@ -62,19 +62,21 @@ export function AdminShell({
   profile,
   settings,
   children,
+  openTicketCount = 0,
 }: {
   profile: Profile
   settings: SiteSettings
   children: React.ReactNode
+  openTicketCount?: number
 }) {
   const pathname = usePathname()
-  const links = [
+  const links: { href: string; label: string; exact?: boolean; badge?: number }[] = [
     { href: '/admin', label: '◆ Dashboard', exact: true },
     { href: '/admin/homepage', label: '◉ Homepage CMS' },
     { href: '/admin/pages', label: '◈ Pages' },
     { href: '/admin/courses', label: '▤ Courses' },
     { href: '/admin/students', label: '☺ Students' },
-    { href: '/admin/support', label: '✉ Support' },
+    { href: '/admin/support', label: '✉ Support', badge: openTicketCount > 0 ? openTicketCount : undefined },
     { href: '/admin/integrations', label: '⎈ Integrations' },
     { href: '/admin/settings', label: '⚙ Settings' },
   ]
@@ -87,7 +89,14 @@ export function AdminShell({
         <nav>
           {links.map((link) => {
             const on = link.exact ? pathname === link.href : pathname.startsWith(link.href)
-            return <Link key={link.href} href={link.href} className={cn('sb-link', on && 'on')}>{link.label}</Link>
+            return (
+              <Link key={link.href} href={link.href} className={cn('sb-link flex items-center justify-between gap-2', on && 'on')}>
+                <span>{link.label}</span>
+                {'badge' in link && link.badge !== undefined && (
+                  <span className="mono rounded border border-yellow px-1.5 py-0.5 text-[10px] text-yellow">{link.badge}</span>
+                )}
+              </Link>
+            )
           })}
         </nav>
       </aside>

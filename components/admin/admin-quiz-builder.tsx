@@ -23,6 +23,8 @@ export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
   const [attemptsAllowed, setAttemptsAllowed] = useState<number | null>(null)
   const [timeLimitMinutes, setTimeLimitMinutes] = useState<number | null>(null)
   const [proctoringRequired, setProctoringRequired] = useState<boolean | null>(null)
+  const [questionOrder, setQuestionOrder] = useState<string | null>(null)
+  const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newQuestion, setNewQuestion] = useState('')
   const [newOptions, setNewOptions] = useState(EMPTY_OPTIONS)
@@ -105,18 +107,20 @@ export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
     const mins = timeLimitMinutes ?? (settings?.time_limit_seconds ? Math.round(settings.time_limit_seconds / 60) : null)
     const time_limit_seconds = mins && mins > 0 ? mins * 60 : null
     const proctoring = proctoringRequired ?? settings?.proctoring_required ?? true
+    const order = questionOrder ?? settings?.question_order ?? 'sequential'
     await createClient().from('module_quiz_settings').upsert({
       module_id: mod.id,
       passing_score: score,
       attempts_allowed: allowed,
       time_limit_seconds,
-      question_order: settings?.question_order ?? 'sequential',
+      question_order: order,
       proctoring_required: proctoring,
     })
     setPassing(null)
     setAttemptsAllowed(null)
     setTimeLimitMinutes(null)
     setProctoringRequired(null)
+    setQuestionOrder(null)
     reloadModule()
   }
 
@@ -183,7 +187,7 @@ export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
             ))}
           </select>
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-4">
           <div className="input-group">
             <label>Passing score (%)</label>
             <input className="input" type="number" min={1} max={100} defaultValue={settings?.passing_score ?? 70} onChange={(e) => setPassing(Number(e.target.value))} />
@@ -195,6 +199,13 @@ export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
           <div className="input-group">
             <label>Time limit (minutes)</label>
             <input className="input" type="number" min={0} placeholder="0 = no timer" defaultValue={currentTimeMins || ''} onChange={(e) => setTimeLimitMinutes(Number(e.target.value))} />
+          </div>
+          <div className="input-group">
+            <label>Question order</label>
+            <select className="input" defaultValue={settings?.question_order ?? 'sequential'} onChange={(e) => setQuestionOrder(e.target.value)}>
+              <option value="sequential">Fixed</option>
+              <option value="random">Random</option>
+            </select>
           </div>
         </div>
         <label className="flex cursor-pointer items-center gap-3 text-sm">
@@ -234,25 +245,47 @@ export function AdminQuizBuilder({ courseSlug }: { courseSlug: string }) {
       )}
 
       {moduleLoading && !moduleData ? <LoadingState /> : (
-        <div className="mt-4 space-y-3">
-          {questions.map((q, i) => (
-            <Panel key={q.id} className="p-5">
+        <>
+          {questions.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {questions.map((q, i) => (
+                <button
+                  key={q.id}
+                  type="button"
+                  className={`mono rounded border px-3 py-1.5 text-xs ${selectedQuestionIndex === i ? 'border-yellow text-yellow' : 'border-[var(--border-soft)]'}`}
+                  onClick={() => { setSelectedQuestionIndex(i); setShowAddForm(false) }}
+                >
+                  Q{i + 1}
+                </button>
+              ))}
+              <button type="button" className="mono text-xs text-yellow hover:underline" onClick={() => setShowAddForm(true)}>+ Add Question</button>
+            </div>
+          )}
+          <div className="mt-4 space-y-3">
+            {questions.filter((_, i) => selectedQuestionIndex === i || questions.length === 1).map((q, i) => {
+              const qi = questions.length === 1 ? 0 : selectedQuestionIndex
+              const question = questions[qi]
+              if (!question) return null
+              return (
+            <Panel key={question.id} className="p-5">
               <div className="mb-3 flex items-start justify-between gap-4">
-                <p className="mono muted text-xs">Question {i + 1}</p>
-                <button type="button" className="mono text-xs text-red-400 hover:underline" onClick={() => void deleteQuestion(q.id)}>Delete</button>
+                <p className="mono muted text-xs">Question {qi + 1} of {questions.length}</p>
+                <button type="button" className="mono text-xs text-red-400 hover:underline" onClick={() => void deleteQuestion(question.id)}>Delete</button>
               </div>
-              <p className="mb-4 text-sm font-medium">{q.question}</p>
+              <p className="mb-4 text-sm font-medium">{question.question}</p>
               <ul className="space-y-2">
-                {(optionsByQuestion[q.id] ?? []).sort((a, b) => a.sort_order - b.sort_order).map((o) => (
+                {(optionsByQuestion[question.id] ?? []).sort((a, b) => a.sort_order - b.sort_order).map((o) => (
                   <li key={o.id} className={`rounded border px-3 py-2 text-sm ${o.is_correct ? 'border-green/40 bg-green/5 text-green' : 'border-[var(--border-soft)]'}`}>
                     {o.option_text}{o.is_correct ? ' ✓' : ''}
                   </li>
                 ))}
               </ul>
             </Panel>
-          ))}
+              )
+            })}
+          </div>
           {!questions.length && <p className="muted text-sm">No questions yet — add one above. Students will see the quiz once at least one question exists.</p>}
-        </div>
+        </>
       )}
 
       <Eyebrow className="mt-10 mb-4">Student submissions ({attempts.length})</Eyebrow>

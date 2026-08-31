@@ -9,6 +9,13 @@ async function loadSettings(supabase: Awaited<ReturnType<typeof requireAdmin>>['
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const { supabase, profile } = await requireAdmin()
-  const settings = await loadSettings(supabase)
-  return <AdminShell profile={profile} settings={settings}>{children}</AdminShell>
+  const [settings, ticketsRes] = await Promise.all([
+    loadSettings(supabase),
+    supabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('status', 'open'),
+  ])
+  return (
+    <AdminShell profile={profile} settings={settings} openTicketCount={ticketsRes.count ?? 0}>
+      {children}
+    </AdminShell>
+  )
 }

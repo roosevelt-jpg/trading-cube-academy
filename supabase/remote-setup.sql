@@ -92,3 +92,8 @@ create policy "students read own activity"
     (meta->>'user_id')::uuid = auth.uid()
     or public.is_admin()
   );
+
+-- 007_support_admin_reply.sql
+alter table public.support_tickets
+  add column if not exists admin_reply text,
+  add column if not exists replied_at timestamptz;

@@ -22,7 +22,7 @@ export function Logo({ settings, className, variant = 'icon', href = '/' }: Logo
       alt={alt}
       className={cn(
         'object-contain',
-        variant === 'banner' ? 'logo-banner h-10 w-auto max-w-[min(220px,100%)]' : 'logo-icon size-9 shrink-0',
+        variant === 'banner' ? 'logo-banner h-10 w-auto max-w-[min(280px,100%)]' : 'logo-icon size-9 shrink-0',
       )}
     />
   )

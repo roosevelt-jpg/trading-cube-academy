@@ -8,7 +8,7 @@ export function CmsPageView({ page, settings }: { page: PageContent; settings: S
   return (
     <main className="min-h-screen bg-background">
       <header className="mkt-header">
-        <Logo settings={settings} />
+        <Logo settings={settings} variant="banner" />
         <Btn variant="ghost" size="sm" href="/">← Home</Btn>
       </header>
 

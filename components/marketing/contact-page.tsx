@@ -40,7 +40,7 @@ export function ContactPageView({ settings, page }: { settings: SiteSettings; pa
   return (
     <main className="min-h-screen bg-background">
       <header className="mkt-header">
-        <Logo settings={settings} />
+        <Logo settings={settings} variant="banner" />
         <Btn variant="ghost" size="sm" href="/">← Back</Btn>
       </header>
 

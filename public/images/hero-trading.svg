@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" role="img" aria-label="Trader analyzing live market charts">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b0b0b"/>
+      <stop offset="100%" stop-color="#151515"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f4b400" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#f4b400" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect width="1400" height="900" fill="url(#bg)"/>
+  <rect width="1400" height="900" fill="url(#glow)"/>
+  <g opacity="0.12" stroke="#f4b400" stroke-width="1">
+    <path d="M0 120H1400M0 240H1400M0 360H1400M0 480H1400M0 600H1400M0 720H1400M0 840H1400"/>
+    <path d="M140 0V900M280 0V900M420 0V900M560 0V900M700 0V900M840 0V900M980 0V900M1120 0V900M1260 0V900"/>
+  </g>
+  <path d="M120 620 220 560 320 590 420 480 520 520 620 380 720 430 820 300 920 340 1020 220 1120 260 1220 180 1320 210" fill="none" stroke="#34d399" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M120 680 220 650 320 670 420 610 520 630 620 560 720 590 820 520 920 540 1020 470 1120 500 1220 430 1320 460" fill="none" stroke="#f4b400" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.85"/>
+  <g fill="#f4b400">
+    <rect x="180" y="500" width="36" height="120" rx="4" opacity="0.9"/>
+    <rect x="260" y="540" width="36" height="80" rx="4" opacity="0.75"/>
+    <rect x="340" y="430" width="36" height="190" rx="4"/>
+    <rect x="420" y="470" width="36" height="150" rx="4" opacity="0.85"/>
+    <rect x="500" y="360" width="36" height="260" rx="4"/>
+    <rect x="580" y="410" width="36" height="210" rx="4" opacity="0.9"/>
+    <rect x="660" y="320" width="36" height="300" rx="4"/>
+    <rect x="740" y="380" width="36" height="240" rx="4" opacity="0.8"/>
+    <rect x="820" y="260" width="36" height="360" rx="4"/>
+    <rect x="900" y="310" width="36" height="310" rx="4" opacity="0.85"/>
+    <rect x="980" y="220" width="36" height="400" rx="4"/>
+    <rect x="1060" y="280" width="36" height="340" rx="4" opacity="0.9"/>
+    <rect x="1140" y="190" width="36" height="430" rx="4"/>
+  </g>
+  <rect x="80" y="80" width="420" height="220" rx="12" fill="#111" stroke="#2a2a2a" stroke-width="2"/>
+  <text x="110" y="130" fill="#888" font-family="monospace" font-size="22">EUR/USD · 1H</text>
+  <text x="110" y="190" fill="#34d399" font-family="monospace" font-size="42" font-weight="700">+1.24%</text>
+  <text x="110" y="235" fill="#666" font-family="monospace" font-size="18">Live market structure session</text>
+  <circle cx="1180" cy="720" r="120" fill="#f4b400" opacity="0.08"/>
+  <circle cx="1180" cy="720" r="70" fill="#f4b400" opacity="0.12"/>
+</svg>

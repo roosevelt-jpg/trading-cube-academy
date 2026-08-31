@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { getSupabaseEnv } from '@/lib/supabase/env'
 import type { MarketingBundle } from '@/lib/data/marketing'
 import { defaultMarketingBundle } from '@/lib/defaults/cms-defaults'
-import { mergeSettings } from '@/lib/defaults/cms-defaults'
+import { mergeSettings, DEFAULT_IMAGES } from '@/lib/defaults/cms-defaults'
 import { Btn, Eyebrow, Logo, Panel } from '@/components/ui/academy-ui'
 import type { SiteSettings } from '@/lib/types/database'
 import { tierLabel, whatsappUrl } from '@/lib/utils/site'
@@ -51,7 +51,7 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
 
   const settings = data.settings
   const home = settings.homepage ?? {}
-  const heroImage = home.heroImageUrl ?? (typeof settings.images === 'object' && settings.images && 'hero' in settings.images ? (settings.images as Record<string, string>).hero : undefined)
+  const heroImage = resolveMarketingHeroImage(home.heroImageUrl, settings)
   const pillarImages = [
     (settings.images as Record<string, Record<string, string>> | undefined)?.pillars?.sequence,
     (settings.images as Record<string, Record<string, string>> | undefined)?.pillars?.accountability,
@@ -61,7 +61,7 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
   return (
     <main className="min-h-screen bg-background">
       <header className="mkt-header flex-wrap gap-4">
-        <Logo settings={settings} />
+        <Logo settings={settings} variant="banner" />
         <nav className="mkt-nav order-3 flex w-full flex-wrap gap-4 md:order-none md:w-auto md:gap-9">
           <Link href="/courses">Courses</Link>
           <Link href="/method">Method</Link>
@@ -242,7 +242,7 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
       <footer className="mkt-footer">
         <div className="mkt-footer-grid">
           <div>
-            <Logo settings={settings} className="mb-3.5" />
+            <Logo settings={settings} variant="banner" className="mb-3.5" />
             <p className="muted max-w-[260px] text-[13px] leading-relaxed">{settings.footer?.description}</p>
           </div>
           <div className="mkt-footer-col">
@@ -270,4 +270,15 @@ export function MarketingHomepageView({ initialData }: { initialData: MarketingB
       <WhatsAppFloatButton settings={settings} context="homepage" />
     </main>
   )
+}
+
+function resolveMarketingHeroImage(homeHero?: string, settings?: SiteSettings) {
+  const fromImages =
+    typeof settings?.images === 'object' && settings.images && 'hero' in settings.images
+      ? (settings.images as Record<string, string>).hero
+      : undefined
+  const candidate = homeHero ?? fromImages ?? DEFAULT_IMAGES.hero
+  if (!candidate?.trim()) return DEFAULT_IMAGES.hero
+  if (candidate.includes('unsplash.com') || candidate.includes('picsum.photos')) return DEFAULT_IMAGES.hero
+  return candidate
 }

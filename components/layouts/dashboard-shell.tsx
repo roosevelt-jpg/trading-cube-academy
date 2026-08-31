@@ -30,7 +30,7 @@ export function StudentShell({
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="sb-brand"><Logo settings={settings} /></div>
+        <div className="sb-brand"><Logo settings={settings} variant="banner" /></div>
         <nav>
           {studentLinks.map((link) => {
             const on = link.exact ? pathname === link.href : pathname.startsWith(link.href)
@@ -81,7 +81,7 @@ export function AdminShell({
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="sb-brand"><Logo settings={settings} /></div>
+        <div className="sb-brand"><Logo settings={settings} variant="banner" /></div>
         <p className="mono px-6 pb-2 text-[10px] uppercase tracking-widest text-yellow">Admin console</p>
         <nav>
           {links.map((link) => {

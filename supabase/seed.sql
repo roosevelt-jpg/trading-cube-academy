@@ -194,62 +194,62 @@ update public.courses set image_url = 'https://images.unsplash.com/photo-1559526
 
 -- Price Action Mastery modules
 insert into public.modules (id, course_id, slug, title, sort_order, lesson_count, unlock_after_module_id, published) values
-('m0030001-0000-4000-8000-000000000001', 'c0010000-0000-4000-8000-000000000003', 'market-structure-basics', 'Module 1 — Market Structure Basics', 0, 4, null, true),
-('m0030001-0000-4000-8000-000000000002', 'c0010000-0000-4000-8000-000000000003', 'trend-liquidity', 'Module 2 — Trend & Liquidity', 1, 5, 'm0030001-0000-4000-8000-000000000001', true),
-('m0030001-0000-4000-8000-000000000003', 'c0010000-0000-4000-8000-000000000003', 'support-resistance', 'Module 3 — Support & Resistance', 2, 6, 'm0030001-0000-4000-8000-000000000002', true),
-('m0030001-0000-4000-8000-000000000004', 'c0010000-0000-4000-8000-000000000003', 'entry-models', 'Module 4 — Entry Models & Confirmation', 3, 5, 'm0030001-0000-4000-8000-000000000003', true);
+('a0030001-0000-4000-8000-000000000001', 'c0010000-0000-4000-8000-000000000003', 'market-structure-basics', 'Module 1 — Market Structure Basics', 0, 4, null, true),
+('a0030001-0000-4000-8000-000000000002', 'c0010000-0000-4000-8000-000000000003', 'trend-liquidity', 'Module 2 — Trend & Liquidity', 1, 5, 'a0030001-0000-4000-8000-000000000001', true),
+('a0030001-0000-4000-8000-000000000003', 'c0010000-0000-4000-8000-000000000003', 'support-resistance', 'Module 3 — Support & Resistance', 2, 6, 'a0030001-0000-4000-8000-000000000002', true),
+('a0030001-0000-4000-8000-000000000004', 'c0010000-0000-4000-8000-000000000003', 'entry-models', 'Module 4 — Entry Models & Confirmation', 3, 5, 'a0030001-0000-4000-8000-000000000003', true);
 
 -- Module 3 lessons
 insert into public.lessons (id, module_id, slug, title, lesson_type, content, youtube_video_id, duration_label, duration_seconds, sort_order, published) values
-('l0030001-0000-4000-8000-000000000001', 'm0030001-0000-4000-8000-000000000003', 'what-is-a-level', 'What is a Level?', 'video', '{"summary":"Define horizontal and dynamic support/resistance levels."}'::jsonb, 'dQw4w9WgXcQ', '7:12', 432, 0, true),
-('l0030001-0000-4000-8000-000000000002', 'm0030001-0000-4000-8000-000000000003', 'horizontal-vs-dynamic', 'Horizontal vs Dynamic S/R', 'video', '{"summary":"Compare fixed levels with trend-based dynamic zones."}'::jsonb, 'dQw4w9WgXcQ', '8:30', 510, 1, true),
-('l0030001-0000-4000-8000-000000000003', 'm0030001-0000-4000-8000-000000000003', 'reading-wicks', 'Reading Wicks & Rejection', 'video', '{"summary":"Identify rejection signals at key levels."}'::jsonb, 'dQw4w9WgXcQ', '9:04', 544, 2, true),
-('l0030001-0000-4000-8000-000000000004', 'm0030001-0000-4000-8000-000000000003', 'multi-timeframe-confluence', 'Multi-Timeframe Confluence', 'video', '{"summary":"Stacking S/R levels across the 4H, 1H and 15M charts to find zones where multiple timeframes agree — the highest-probability reaction points on the chart."}'::jsonb, 'dQw4w9WgXcQ', '11:02', 662, 3, true),
-('l0030001-0000-4000-8000-000000000005', 'm0030001-0000-4000-8000-000000000003', 'zone-vs-line', 'Written: Zone vs Line Debate', 'reading', '{"paragraphs":["A single price line implies a precision the market rarely respects. In practice, support and resistance behave as zones — a band of prices where reactions cluster, not one exact tick.","The width of that zone should scale with the timeframe you''re trading. A 15-minute chart might use a ten-pip band; a weekly chart might need fifty."],"takeaway":"Mark zones, not lines — then wait for a reaction inside the zone before acting on it."}'::jsonb, null, '6 min', 360, 4, true),
-('l0030001-0000-4000-8000-000000000006', 'm0030001-0000-4000-8000-000000000003', 'module-quiz', 'Module Quiz', 'quiz', '{}'::jsonb, null, null, null, 5, true);
+('b0030001-0000-4000-8000-000000000001', 'a0030001-0000-4000-8000-000000000003', 'what-is-a-level', 'What is a Level?', 'video', '{"summary":"Define horizontal and dynamic support/resistance levels."}'::jsonb, 'dQw4w9WgXcQ', '7:12', 432, 0, true),
+('b0030001-0000-4000-8000-000000000002', 'a0030001-0000-4000-8000-000000000003', 'horizontal-vs-dynamic', 'Horizontal vs Dynamic S/R', 'video', '{"summary":"Compare fixed levels with trend-based dynamic zones."}'::jsonb, 'dQw4w9WgXcQ', '8:30', 510, 1, true),
+('b0030001-0000-4000-8000-000000000003', 'a0030001-0000-4000-8000-000000000003', 'reading-wicks', 'Reading Wicks & Rejection', 'video', '{"summary":"Identify rejection signals at key levels."}'::jsonb, 'dQw4w9WgXcQ', '9:04', 544, 2, true),
+('b0030001-0000-4000-8000-000000000004', 'a0030001-0000-4000-8000-000000000003', 'multi-timeframe-confluence', 'Multi-Timeframe Confluence', 'video', '{"summary":"Stacking S/R levels across the 4H, 1H and 15M charts to find zones where multiple timeframes agree — the highest-probability reaction points on the chart."}'::jsonb, 'dQw4w9WgXcQ', '11:02', 662, 3, true),
+('b0030001-0000-4000-8000-000000000005', 'a0030001-0000-4000-8000-000000000003', 'zone-vs-line', 'Written: Zone vs Line Debate', 'reading', '{"paragraphs":["A single price line implies a precision the market rarely respects. In practice, support and resistance behave as zones — a band of prices where reactions cluster, not one exact tick.","The width of that zone should scale with the timeframe you''re trading. A 15-minute chart might use a ten-pip band; a weekly chart might need fifty."],"takeaway":"Mark zones, not lines — then wait for a reaction inside the zone before acting on it."}'::jsonb, null, '6 min', 360, 4, true),
+('b0030001-0000-4000-8000-000000000006', 'a0030001-0000-4000-8000-000000000003', 'module-quiz', 'Module Quiz', 'quiz', '{}'::jsonb, null, null, null, 5, true);
 
 -- Module 1 & 2 sample lessons (completed by Marcus)
 insert into public.lessons (id, module_id, slug, title, lesson_type, content, youtube_video_id, duration_label, sort_order, published) values
-('l0030001-0000-4000-8000-000000000010', 'm0030001-0000-4000-8000-000000000001', 'intro-structure', 'Introduction to Market Structure', 'video', '{}'::jsonb, 'dQw4w9WgXcQ', '8:00', 0, true),
-('l0030001-0000-4000-8000-000000000011', 'm0030001-0000-4000-8000-000000000002', 'intro-trend', 'Trend Identification', 'video', '{}'::jsonb, 'dQw4w9WgXcQ', '9:00', 0, true);
+('b0030001-0000-4000-8000-000000000010', 'a0030001-0000-4000-8000-000000000001', 'intro-structure', 'Introduction to Market Structure', 'video', '{}'::jsonb, 'dQw4w9WgXcQ', '8:00', 0, true),
+('b0030001-0000-4000-8000-000000000011', 'a0030001-0000-4000-8000-000000000002', 'intro-trend', 'Trend Identification', 'video', '{}'::jsonb, 'dQw4w9WgXcQ', '9:00', 0, true);
 
 -- Quiz settings & questions for Module 3
 insert into public.module_quiz_settings (module_id, passing_score, attempts_allowed, question_order, time_limit_seconds) values
-('m0030001-0000-4000-8000-000000000003', 70, 3, 'sequential', 1800)
+('a0030001-0000-4000-8000-000000000003', 70, 3, 'sequential', 1800)
 on conflict (module_id) do update set time_limit_seconds = excluded.time_limit_seconds;
 
 insert into public.quiz_questions (id, module_id, question, sort_order) values
-('q0030001-0000-4000-8000-000000000001', 'm0030001-0000-4000-8000-000000000003', 'What defines a horizontal S/R level?', 0),
-('q0030001-0000-4000-8000-000000000002', 'm0030001-0000-4000-8000-000000000003', 'How does a rejection wick differ from a close?', 1),
-('q0030001-0000-4000-8000-000000000003', 'm0030001-0000-4000-8000-000000000003', 'A level is tested three times and holds each time, then breaks with a strong close beyond it. What should you expect on the retest?', 2),
-('q0030001-0000-4000-8000-000000000004', 'm0030001-0000-4000-8000-000000000003', 'Which timeframe carries more weight in confluence?', 3),
-('q0030001-0000-4000-8000-000000000005', 'm0030001-0000-4000-8000-000000000003', 'Should you trade from a single price line or a zone?', 4),
-('q0030001-0000-4000-8000-000000000006', 'm0030001-0000-4000-8000-000000000003', 'What happens when former resistance is broken?', 5),
-('q0030001-0000-4000-8000-000000000007', 'm0030001-0000-4000-8000-000000000003', 'How wide should a zone be on a 15-minute chart?', 6),
-('q0030001-0000-4000-8000-000000000008', 'm0030001-0000-4000-8000-000000000003', 'When is volume most relevant at a level?', 7);
+('d0030001-0000-4000-8000-000000000001', 'a0030001-0000-4000-8000-000000000003', 'What defines a horizontal S/R level?', 0),
+('d0030001-0000-4000-8000-000000000002', 'a0030001-0000-4000-8000-000000000003', 'How does a rejection wick differ from a close?', 1),
+('d0030001-0000-4000-8000-000000000003', 'a0030001-0000-4000-8000-000000000003', 'A level is tested three times and holds each time, then breaks with a strong close beyond it. What should you expect on the retest?', 2),
+('d0030001-0000-4000-8000-000000000004', 'a0030001-0000-4000-8000-000000000003', 'Which timeframe carries more weight in confluence?', 3),
+('d0030001-0000-4000-8000-000000000005', 'a0030001-0000-4000-8000-000000000003', 'Should you trade from a single price line or a zone?', 4),
+('d0030001-0000-4000-8000-000000000006', 'a0030001-0000-4000-8000-000000000003', 'What happens when former resistance is broken?', 5),
+('d0030001-0000-4000-8000-000000000007', 'a0030001-0000-4000-8000-000000000003', 'How wide should a zone be on a 15-minute chart?', 6),
+('d0030001-0000-4000-8000-000000000008', 'a0030001-0000-4000-8000-000000000003', 'When is volume most relevant at a level?', 7);
 
 insert into public.quiz_options (id, question_id, option_text, is_correct, sort_order) values
-('o0030001-0000-4000-8000-000000000001', 'q0030001-0000-4000-8000-000000000003', 'The level often flips — former resistance becomes support', true, 0),
-('o0030001-0000-4000-8000-000000000002', 'q0030001-0000-4000-8000-000000000003', 'Price always reverses back below the level', false, 1),
-('o0030001-0000-4000-8000-000000000003', 'q0030001-0000-4000-8000-000000000003', 'The level has no further relevance', false, 2),
-('o0030001-0000-4000-8000-000000000004', 'q0030001-0000-4000-8000-000000000003', 'Volume becomes irrelevant after a breakout', false, 3),
-('o0030001-0000-4000-8000-000000000005', 'q0030001-0000-4000-8000-000000000001', 'A price area where reactions have clustered historically', true, 0),
-('o0030001-0000-4000-8000-000000000006', 'q0030001-0000-4000-8000-000000000001', 'Any round number on the chart', false, 1),
-('o0030001-0000-4000-8000-000000000007', 'q0030001-0000-4000-8000-000000000004', 'The higher timeframe', true, 0),
-('o0030001-0000-4000-8000-000000000008', 'q0030001-0000-4000-8000-000000000004', 'The lowest timeframe always', false, 1),
-('o0030001-0000-4000-8000-000000000009', 'q0030001-0000-4000-8000-000000000005', 'A zone scaled to the timeframe', true, 0),
-('o0030001-0000-4000-8000-000000000010', 'q0030001-0000-4000-8000-000000000005', 'A single exact tick', false, 1);
+('e0030001-0000-4000-8000-000000000001', 'd0030001-0000-4000-8000-000000000003', 'The level often flips — former resistance becomes support', true, 0),
+('e0030001-0000-4000-8000-000000000002', 'd0030001-0000-4000-8000-000000000003', 'Price always reverses back below the level', false, 1),
+('e0030001-0000-4000-8000-000000000003', 'd0030001-0000-4000-8000-000000000003', 'The level has no further relevance', false, 2),
+('e0030001-0000-4000-8000-000000000004', 'd0030001-0000-4000-8000-000000000003', 'Volume becomes irrelevant after a breakout', false, 3),
+('e0030001-0000-4000-8000-000000000005', 'd0030001-0000-4000-8000-000000000001', 'A price area where reactions have clustered historically', true, 0),
+('e0030001-0000-4000-8000-000000000006', 'd0030001-0000-4000-8000-000000000001', 'Any round number on the chart', false, 1),
+('e0030001-0000-4000-8000-000000000007', 'd0030001-0000-4000-8000-000000000004', 'The higher timeframe', true, 0),
+('e0030001-0000-4000-8000-000000000008', 'd0030001-0000-4000-8000-000000000004', 'The lowest timeframe always', false, 1),
+('e0030001-0000-4000-8000-000000000009', 'd0030001-0000-4000-8000-000000000005', 'A zone scaled to the timeframe', true, 0),
+('e0030001-0000-4000-8000-000000000010', 'd0030001-0000-4000-8000-000000000005', 'A single exact tick', false, 1);
 
 -- YouTube marketing videos (marquee)
 insert into public.youtube_videos (id, title, description, video_id, course_name, duration_label, visibility, published, sort_order) values
-('v0000001-0000-4000-8000-000000000001', 'Reading Your First Candlestick', 'Foundation preview', 'dQw4w9WgXcQ', 'Market Structure Basics', '6:42', 'marketing', true, 0),
-('v0000001-0000-4000-8000-000000000002', 'Position Sizing in 90 Seconds', 'Risk preview', 'dQw4w9WgXcQ', 'Risk Management', '5:18', 'marketing', true, 1),
-('v0000001-0000-4000-8000-000000000003', 'Support & Resistance Zones', 'Price action preview', 'dQw4w9WgXcQ', 'Price Action Mastery', '9:04', 'marketing', true, 2),
-('v0000001-0000-4000-8000-000000000004', 'RSI vs. Price Action', 'TA preview', 'dQw4w9WgXcQ', 'Technical Analysis 101', '7:26', 'marketing', true, 3),
-('v0000001-0000-4000-8000-000000000005', 'Multi-Timeframe Confluence', 'Core lesson preview', 'dQw4w9WgXcQ', 'Price Action Mastery', '11:02', 'marketing', true, 4),
-('v0000001-0000-4000-8000-000000000006', 'Drawdown Control Rules', 'Risk preview', 'dQw4w9WgXcQ', 'Risk Management', '6:33', 'marketing', true, 5),
-('v0000001-0000-4000-8000-000000000007', 'Options Spreads Explained', 'Advanced preview', 'dQw4w9WgXcQ', 'Options Trading Blueprint', '8:15', 'marketing', true, 6),
-('v0000001-0000-4000-8000-000000000008', 'The Revenge Trade Trap', 'Psychology preview', 'dQw4w9WgXcQ', 'Trading Psychology', '5:47', 'marketing', true, 7);
+('f0000001-0000-4000-8000-000000000001', 'Reading Your First Candlestick', 'Foundation preview', 'dQw4w9WgXcQ', 'Market Structure Basics', '6:42', 'marketing', true, 0),
+('f0000001-0000-4000-8000-000000000002', 'Position Sizing in 90 Seconds', 'Risk preview', 'dQw4w9WgXcQ', 'Risk Management', '5:18', 'marketing', true, 1),
+('f0000001-0000-4000-8000-000000000003', 'Support & Resistance Zones', 'Price action preview', 'dQw4w9WgXcQ', 'Price Action Mastery', '9:04', 'marketing', true, 2),
+('f0000001-0000-4000-8000-000000000004', 'RSI vs. Price Action', 'TA preview', 'dQw4w9WgXcQ', 'Technical Analysis 101', '7:26', 'marketing', true, 3),
+('f0000001-0000-4000-8000-000000000005', 'Multi-Timeframe Confluence', 'Core lesson preview', 'dQw4w9WgXcQ', 'Price Action Mastery', '11:02', 'marketing', true, 4),
+('f0000001-0000-4000-8000-000000000006', 'Drawdown Control Rules', 'Risk preview', 'dQw4w9WgXcQ', 'Risk Management', '6:33', 'marketing', true, 5),
+('f0000001-0000-4000-8000-000000000007', 'Options Spreads Explained', 'Advanced preview', 'dQw4w9WgXcQ', 'Options Trading Blueprint', '8:15', 'marketing', true, 6),
+('f0000001-0000-4000-8000-000000000008', 'The Revenge Trade Trap', 'Psychology preview', 'dQw4w9WgXcQ', 'Trading Psychology', '5:47', 'marketing', true, 7);
 
 -- Student enrollments & progress (resolves live student profile — works when auth UUIDs differ from seed)
 insert into public.enrollments (user_id, course_id, progress_pct)
@@ -268,9 +268,9 @@ insert into public.module_progress (user_id, module_id, completed, progress_pct)
 select s.id, v.module_id, v.completed, v.progress_pct
 from (select id from public.profiles where role = 'student' order by created_at limit 1) s
 cross join (values
-  ('m0030001-0000-4000-8000-000000000001'::uuid, true, 100),
-  ('m0030001-0000-4000-8000-000000000002'::uuid, true, 100),
-  ('m0030001-0000-4000-8000-000000000003'::uuid, false, 67)
+  ('a0030001-0000-4000-8000-000000000001'::uuid, true, 100),
+  ('a0030001-0000-4000-8000-000000000002'::uuid, true, 100),
+  ('a0030001-0000-4000-8000-000000000003'::uuid, false, 67)
 ) as v(module_id, completed, progress_pct)
 where s.id is not null
 on conflict (user_id, module_id) do update set
@@ -281,10 +281,10 @@ insert into public.lesson_progress (user_id, lesson_id, completed, progress_pct)
 select s.id, v.lesson_id, v.completed, v.progress_pct
 from (select id from public.profiles where role = 'student' order by created_at limit 1) s
 cross join (values
-  ('l0030001-0000-4000-8000-000000000001'::uuid, true, 100),
-  ('l0030001-0000-4000-8000-000000000002'::uuid, true, 100),
-  ('l0030001-0000-4000-8000-000000000003'::uuid, true, 100),
-  ('l0030001-0000-4000-8000-000000000004'::uuid, false, 57)
+  ('b0030001-0000-4000-8000-000000000001'::uuid, true, 100),
+  ('b0030001-0000-4000-8000-000000000002'::uuid, true, 100),
+  ('b0030001-0000-4000-8000-000000000003'::uuid, true, 100),
+  ('b0030001-0000-4000-8000-000000000004'::uuid, false, 57)
 ) as v(lesson_id, completed, progress_pct)
 where s.id is not null
 on conflict (user_id, lesson_id) do update set
@@ -300,7 +300,7 @@ select
     when 'enrollment' then jsonb_build_object('user_id', s.id)
     when 'lesson_complete' then jsonb_build_object(
       'user_id', s.id,
-      'lesson_id', 'l0030001-0000-4000-8000-000000000003'::uuid
+      'lesson_id', 'b0030001-0000-4000-8000-000000000003'::uuid
     )
   end
 from (select id from public.profiles where role = 'student' order by created_at limit 1) s
